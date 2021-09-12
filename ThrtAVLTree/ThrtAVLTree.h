@@ -38,6 +38,8 @@ typedef struct AVLTreeOp{
 	void (*traverse)(AVLTree*, AVLForEachFuncT);
 	void (*insert)(AVLTree*, const void*, const void*);
 	void (*erase)(AVLTree*, const void*);
+	const void* (*at)(AVLTree*, const void*);
+	void (*change)(AVLTree*, const void*, const void*);
 }AVLTreeOp;
 
 extern const AVLTreeOp* GetAVLTreeOpStruct();

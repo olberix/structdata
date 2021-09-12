@@ -557,6 +557,25 @@ static void erase(AVLTree* tree, const void* pKey)
 	}
 }
 
+const void* at(AVLTree* tree, const void* pKey)
+{
+	AVLNode* root = tree->root;
+	while(root){
+		if (tree->equalFunc(root->pKey, pKey))
+			return root->pValue;
+		if (tree->lessFunc(root->pKey, pKey))
+			root = L_CHILD(root);
+		else
+			root = R_CHILD(root);
+	}
+	return NULL;
+}
+
+void change(AVLTree* tree, const void* pKey, const void* pValue)
+{
+	insert(tree, pKey, pValue);
+}
+
 const inline AVLTreeOp* GetAVLTreeOpStruct()
 {
 	static const AVLTreeOp OpList = {
@@ -574,6 +593,8 @@ const inline AVLTreeOp* GetAVLTreeOpStruct()
 		.traverse = traverse,
 		.insert = insert,
 		.erase = erase,
+		.at = at,
+		.change = change,
 	};
 	return &OpList;
 }
