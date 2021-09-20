@@ -465,6 +465,7 @@ static inline void delete_leaf_node(AVLTree* tree, AVLNode* root, AVLNode* paren
 	RELEASENODE(root);
 }
 
+/*可以跟delete_leaf_node合在一起,但感觉没必要*/
 static inline void delete_single_node(AVLTree* tree, AVLNode* root, AVLNode* parent)
 {
 	AVLNode* rootChild = NULL;

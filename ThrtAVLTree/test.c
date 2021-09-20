@@ -63,7 +63,11 @@ int main()
 		key.a = arry[i];
 		AVLTree().erase(tree, &key);
 	}
-	// key.a = 8;
+	key.a = 10;
+	val.a = 10555;
+	AVLTree().change(tree, &key, &val);
+	const void* p = AVLTree().at(tree, &key);
+	printf("%d\n", ((VALUE*)p)->a);
 	// AVLTree().erase(tree, &key);
 	// printf("%p\n", &tree->thrtHead);
 	// printf("%p\n", tree->root);
