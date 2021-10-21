@@ -3,6 +3,15 @@
 #include "../DlQueue/DlQueue.h"
 #include <string.h>
 
+#define ROOTCREATE(tree, root, pkey, pValue)\
+	POINTCREATE(AVLNode*, (root), AVLNode, sizeof(AVLNode));\
+	memset((root), 0, sizeof(AVLNode));\
+	(root)->height = 1;\
+	POINTCREATE(EMPTYDEF, (root)->pKey, void, (tree)->keySize);\
+	POINTCREATE(EMPTYDEF, (root)->pValue, void, (tree)->valSize);\
+	memcpy((root)->pKey, pKey, (tree)->keySize);\
+	memcpy((root)->pValue, pValue, (tree)->valSize);
+
 static AVLTree* create(size_t keySize, size_t valSize, AVLKeyCompareFuncT equalFunc, AVLKeyCompareFuncT lessFunc)
 {
 	CONDCHECK(keySize > 0 && valSize > 0, STATUS_SIZEERROR);
@@ -19,25 +28,6 @@ static AVLTree* create(size_t keySize, size_t valSize, AVLKeyCompareFuncT equalF
 	ret->lessFunc = lessFunc;
 	return ret;
 }
-
-#define ROOTCHECK(root) do{\
-	if (!(root))\
-		return;\
-}while(0)
-
-#define ROOTCREATE(tree, root, pkey, pValue)\
-	POINTCREATE(AVLNode*, (root), AVLNode, sizeof(AVLNode));\
-	memset((root), 0, sizeof(AVLNode));\
-	(root)->height = 1;\
-	POINTCREATE(EMPTYDEF, (root)->pKey, void, (tree)->keySize);\
-	POINTCREATE(EMPTYDEF, (root)->pValue, void, (tree)->valSize);\
-	memcpy((root)->pKey, pKey, (tree)->keySize);\
-	memcpy((root)->pValue, pValue, (tree)->valSize);
-
-#define RELEASENODE(node)\
-	FREE((node)->pKey);\
-	FREE((node)->pValue);\
-	FREE(node);
 
 static inline AVLNode* L_CHILD(AVLNode* root)
 {
@@ -69,7 +59,7 @@ static inline void clear(AVLTree* tree)
 	tree->thrtHead.rchild = &tree->thrtHead;
 }
 
-static void destroy(AVLTree** stree)
+static inline void destroy(AVLTree** stree)
 {
 	clear(*stree);
 	FREE(*stree);
@@ -465,7 +455,7 @@ static inline void delete_leaf_node(AVLTree* tree, AVLNode* root, AVLNode* paren
 	RELEASENODE(root);
 }
 
-/*可以跟delete_leaf_node合在一起,但感觉没必要*/
+/*可以跟delete_leaf_node合在一起,但感觉没必要,还是这样分开明确一点*/
 static inline void delete_single_node(AVLTree* tree, AVLNode* root, AVLNode* parent)
 {
 	AVLNode* rootChild = NULL;
@@ -577,7 +567,7 @@ void change(AVLTree* tree, const void* pKey, const void* pValue)
 	insert(tree, pKey, pValue);
 }
 
-const inline AVLTreeOp* GetAVLTreeOpStruct()
+inline const AVLTreeOp* GetAVLTreeOpStruct()
 {
 	static const AVLTreeOp OpList = {
 		.create = create,

@@ -52,6 +52,16 @@ static const char* errStr[] = {
 }while (0)
 #endif
 
+#define ROOTCHECK(root) do{\
+	if (!(root))\
+		return;\
+}while(0)
+
+#define RELEASENODE(node)\
+	FREE((node)->pKey);\
+	FREE((node)->pValue);\
+	FREE(node);
+
 #define EMPTYDEF
 #define POINTCREATE(def, point, type, size)\
 	def point = (type*)malloc(size);\

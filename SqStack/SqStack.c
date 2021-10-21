@@ -7,7 +7,7 @@ static SqStack* create(size_t ESize, const size_t* pLSize)
 	return ret;
 }
 
-const static void* get_top(SqStack* stack)
+static const void* get_top(SqStack* stack)
 {
 	SqList* pList = stack->list;
 	size_t length = SqList().length(pList);
@@ -15,7 +15,7 @@ const static void* get_top(SqStack* stack)
 	return SqList().at(pList, length - 1);
 }
 
-const static void* pop(SqStack* stack)
+static const void* pop(SqStack* stack)
 {
 	SqList* pList = stack->list;
 	size_t length = SqList().length(pList);
@@ -49,7 +49,7 @@ static inline void for_each(SqStack* stack, SqlFEFuncT func)
 	SqList().for_each(stack->list, func);
 }
 
-const inline SqStackOp* GetSqStackOpStruct()
+inline const SqStackOp* GetSqStackOpStruct()
 {
 	static const SqStackOp OpList = {
 		.create = create,

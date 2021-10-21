@@ -18,7 +18,7 @@ static inline void destroy(DlQueue** sQueue)
 	FREE((*sQueue));
 }
 
-static const inline void* pop(DlQueue* queue)
+static inline const void* pop(DlQueue* queue)
 {
 	return DucList().erase(queue->list, 0);
 }
@@ -38,7 +38,7 @@ static inline void for_each(DlQueue* queue, DucLFEFuncT func)
 	DucList().for_each(queue->list, func);
 }
 
-const inline DlQueueOp* GetDlQueueOpStruct()
+inline const DlQueueOp* GetDlQueueOpStruct()
 {
 	static const DlQueueOp OpList = {
 		.create = create,

@@ -17,14 +17,14 @@ static SqList* create(size_t ESize, const size_t* pLSize)
 	return ret;
 }
 
-static void inline destroy(SqList** ppList)
+static inline void destroy(SqList** ppList)
 {
 	FREE((*ppList)->pElems);
 	FREE((*ppList)->tmpRet);
 	FREE(*ppList);
 }
 
-static void inline clear(SqList* pList)
+static inline void clear(SqList* pList)
 {
 	pList->length = 0;
 }
@@ -41,7 +41,7 @@ static inline void CHECK_REALLOC(SqList* pList)
 
 static void insert(SqList* pList, size_t loc, const void* elem)
 {
-	CONDCHECK(loc >= 0 && loc <= pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc <= pList->length, STATUS_INVALIDINDEX);
 	CHECK_REALLOC(pList);
 	size_t e_S = pList->e_S;
 	void* locAddr = pList->pElems + loc * e_S;
@@ -57,13 +57,13 @@ static inline void push_back(SqList* pList, const void* elem)
 
 static inline void change(SqList* pList, size_t loc, const void* elem)
 {
-	CONDCHECK(loc >= 0 && loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
 	memcpy(pList->pElems + loc * pList->e_S, elem, pList->e_S);
 }
 
 static const void* erase(SqList* pList, size_t loc)
 {
-	CONDCHECK(loc >= 0 && loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
 	void* locAddr = pList->pElems + loc * pList->e_S;
 	memcpy(pList->tmpRet, locAddr, pList->e_S);
 	memmove(locAddr, locAddr + pList->e_S, pList->e_S * (pList->length - 1 - loc));
@@ -71,9 +71,9 @@ static const void* erase(SqList* pList, size_t loc)
 	return pList->tmpRet;
 }
 
-static const inline void* at(SqList* pList, size_t loc)
+static inline const void* at(SqList* pList, size_t loc)
 {
-	CONDCHECK(loc >= 0 && loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
 	return pList->pElems + loc * pList->e_S;
 }
 
@@ -146,7 +146,7 @@ static inline void sort(SqList* pList, SqlCmpFuncT func)
 	QUICK_SORT(pList, func, 0, pList->length - 1);
 }
 
-const inline SqListOp* GetSqListOpStruct()
+inline const SqListOp* GetSqListOpStruct()
 {
 	static const SqListOp OpList = {
 		.create = create,

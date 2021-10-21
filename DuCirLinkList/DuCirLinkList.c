@@ -60,7 +60,7 @@ static inline DuCirLink* FIND_LOCNODE(DuCirLinkList* pList, size_t loc)
 
 static void insert(DuCirLinkList* pList, size_t loc, const void* elem)
 {
-	CONDCHECK(loc >= 0 && loc <= pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc <= pList->length, STATUS_INVALIDINDEX);
 	POINTCREATE(DuCirLink*, node, DuCirLink, sizeof(DuCirLink));
 	POINTCREATE(EMPTYDEF, node->pElem, void, pList->e_S);
 	memcpy(node->pElem, elem, pList->e_S);
@@ -76,14 +76,14 @@ static inline void push_back(DuCirLinkList* pList, const void* elem)
 
 static inline void change(DuCirLinkList* pList, size_t loc, const void* elem)
 {
-	CONDCHECK(loc >= 0 && loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
 	DuCirLink* locNode = FIND_LOCNODE(pList, loc);
 	memcpy(locNode->pElem, elem, pList->e_S);
 }
 
-const static void* erase(DuCirLinkList* pList, size_t loc)
+static const void* erase(DuCirLinkList* pList, size_t loc)
 {
-	CONDCHECK(loc >= 0 && loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
 	DuCirLink* locNode = FIND_LOCNODE(pList, loc);
 	DuCirLink* nextNode = locNode->next;
 	DuCirLink* priorNode = locNode->prior;
@@ -94,9 +94,9 @@ const static void* erase(DuCirLinkList* pList, size_t loc)
 	return pList->tmpRet;
 }
 
-const static inline void* at(DuCirLinkList* pList, size_t loc)
+static inline const void* at(DuCirLinkList* pList, size_t loc)
 {
-	CONDCHECK(loc >= 0 && loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
 	DuCirLink* locNode = FIND_LOCNODE(pList, loc);
 	return locNode->pElem;
 }
@@ -178,7 +178,7 @@ static void sort(DuCirLinkList* pList, DucLCmpFuncT func)
 	quick_sort(func, BEGIN(pList), LAST(pList));
 }
 
-const inline DucListOp* GetDucListOpStruct()
+inline const DucListOp* GetDucListOpStruct()
 {
 	static const DucListOp OpList = {
 		.create = create,
