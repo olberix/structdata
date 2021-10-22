@@ -42,7 +42,7 @@ int main()
 	AVLTree* tree = AVLTree().create(sizeof(KEY), sizeof(VALUE), key_equal, key_less);
 	KEY key;
 	VALUE val;
-	for (size_t i = 0; i < 100; i++){
+	for (size_t i = 0; i < 50; i++){
 		key.a = rand()%100;
 		key.b = rand()%100 + 0.25;
 		val.a = rand()%100;
@@ -52,7 +52,7 @@ int main()
 		if(key.a%2 == 0 || key.a%3==0 || key.a %5==0 || key.a%7==0)
 			AVLTree().erase(tree, &key);
 	}
-	AVLTree().clear(tree);
+	// AVLTree().clear(tree);
 	int arry[] = {2,8,10,15,25,27,32,50,55,60,78,80,455,421,56654,43,44,224,3,45,64,4,21,41,54,5};
 	for (size_t i = 0; i < sizeof(arry) / sizeof(int); i++){
 		key.a = arry[i];

@@ -402,8 +402,10 @@ static inline void do_balance_erase(SqStack* stack, AVLTree* tree)
 		unsigned char lh = _H(L_CHILD(tmpRoot));
 		unsigned char rh = _H(R_CHILD(tmpRoot));
 		unsigned char nh = (lh > rh ? lh : rh) + 1;
-		tmpRoot->height = nh;
 		char factor = lh - rh;
+		if (tmpRoot->height == nh && factor <= 1 && factor >= -1)//写红黑树删除的时候突然想到,AVL树的删除好像也不需要回溯到到根节点
+			break;
+		tmpRoot->height = nh;
 		if (factor > 1){
 			AVLNode* lc = L_CHILD(tmpRoot);
 			AVLNode* parent = NULL;
@@ -488,6 +490,11 @@ static inline void delete_single_node(AVLTree* tree, AVLNode* root, AVLNode* par
 	RELEASENODE(root);
 }
 
+/*
+*先额外空间保存key值然后复制pValue,删除替换结点后再复制key值到原结点
+*这种实现方式其实有点奇怪,比较符合逻辑的做法应该是通过更改指针指向实现
+*但是AVL树的实现中加入了线索,如果采用更改指针指向做法实在太过繁杂,其实不涉及线程安全,下面这种做法没啥毛病
+*/
 static void erase(AVLTree*, const void*);
 static inline void delete_binary_node(AVLTree* tree, AVLNode* root)
 {
