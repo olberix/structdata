@@ -187,7 +187,7 @@ static void insert(RBTree* tree, const void* pKey, const void* pValue)
 		root->color = RB_BLACK;
 		return;
 	}
-	while(root){
+	while(true){
 		if (tree->equalFunc(root->pKey, pKey)){
 			memcpy(root->pValue, pValue, tree->valSize);
 			return;
@@ -217,9 +217,150 @@ static void insert(RBTree* tree, const void* pKey, const void* pValue)
 	}
 }
 
+static inline void reset_parent_point(RBNode* P, RBNode* rlc, RBNode* C)
+{
+	if (P->lchild == rlc)
+		P->lchild = C;
+	else
+		P->rchild = C;
+}
+
+static void do_balance_erase(RBTree* tree, RBNode* rlc)
+{
+	RBNode* P = rlc->parent;
+	//红色结点-无孩子
+	if (rlc->color == RB_RED){
+		reset_parent_point(P, rlc, NULL);
+		return;
+	}
+	RBNode* C = rlc->lchild;
+	if (!C)
+		C = rlc->rchild;
+	//黑色结点-仅有一个(红色)孩子
+	if (C){
+		if (P)//非根节点
+			reset_parent_point(P, rlc, C);
+		else//根节点
+			tree->root = C;
+		C->parent = P;
+		C->color = RB_BLACK;
+		return;
+	}
+	//黑色结点(根节点)-无孩子
+	if (!P){
+		tree->root = NULL;
+		return;
+	}
+	//黑色结点(非根节点)-无孩子
+	RBNode* pivot = rlc;
+	while(true){
+		if (!P)//根节点,黑高减一
+			break;
+		//S是P左孩子
+		if (P->rchild == pivot){
+			RBNode* S = P->lchild;
+			//S为黑色
+			if (S->color == RB_BLACK){
+				RBNode* SL = S->lchild;
+				//SL为红色
+				if (SL && SL->color == RB_RED){
+					right_rotation(tree, P);
+					SL->color ^= 0x1;
+					S->color = P->color;
+					P->color = RB_BLACK;
+					break;
+				}
+				RBNode* SR = S->rchild;
+				//SR为红色(SL,SR同为红色时可以选择前后两步任意操作,不同操作会导致红黑树表现不同)
+				if (SR && SR->color == RB_RED){
+					left_rotation(tree, S);
+					right_rotation(tree, P);
+					SR->color = P->color;
+					P->color = RB_BLACK;
+					break;
+				}
+				//SL,SR均为黑色
+				S->color = RB_RED;
+				if (P->color == RB_RED){//P为红色
+					P->color = RB_BLACK;
+					break;
+				}
+				pivot = P;//P为黑色
+				P = P->parent;
+			}
+			//S为红色
+			else{
+				right_rotation(tree, P);
+				P->color ^= 0x1;
+				S->color ^= 0x1;
+			}
+		}
+		//S是P右孩子
+		else{
+			RBNode* S = P->rchild;
+			//S为黑色
+			if (S->color == RB_BLACK){
+				RBNode* SR = S->rchild;
+				//SR为红色
+				if (SR && SR->color == RB_RED){
+					left_rotation(tree, P);
+					SR->color ^= 0x1;
+					S->color = P->color;
+					P->color = RB_BLACK;
+					break;
+				}
+				RBNode* SL = S->lchild;
+				//SL为红色
+				if (SL && SL->color == RB_RED){
+					right_rotation(tree, S);
+					left_rotation(tree, P);
+					SL->color = P->color;
+					P->color = RB_BLACK;
+					break;
+				}
+				//SR,SL均为黑色
+				S->color = RB_RED;
+				if (P->color == RB_RED){//P为红色
+					P->color = RB_BLACK;
+					break;
+				}
+				pivot = P;//P为黑色
+				P = P->parent;
+			}
+			//S为红色
+			else{
+				left_rotation(tree, P);
+				P->color ^= 0x1;
+				S->color ^= 0x1;
+			}
+		}
+	}
+	reset_parent_point(rlc->parent, rlc, NULL);
+}
+
 static void erase(RBTree* tree, const void* pKey)
 {
-
+	RBNode* root = tree->root;
+	while(root){
+		if (tree->equalFunc(root->pKey, pKey)){
+			RBNode* rlc = root->rchild;
+			if (rlc){
+				while(rlc->lchild)
+					rlc = rlc->lchild;
+				memcpy(root->pKey, rlc->pKey, tree->keySize);
+				memcpy(root->pValue, rlc->pValue, tree->valSize);
+			}
+			else
+				rlc = root;
+			do_balance_erase(tree, rlc);
+			RELEASENODE(rlc);
+			return;
+		}
+		if (tree->lessFunc(root->pKey, pKey))
+			root = root->lchild;
+		else
+			root = root->rchild;
+	}
 }
 
 const void* at(RBTree* tree, const void* pKey)

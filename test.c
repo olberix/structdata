@@ -13,20 +13,8 @@
     (type *)( (char *)__mptr - offsetof(type,member) );})
 
 
-_Noreturn void test1()
-{
-	puts("111111-test1");
-}
-
-/*_Noreturn*/ void test2()
-{
-	puts("222222-test2");
-	test1();
-}
-
 int main(int argc, char const *argv[])
 {
-	test2();
-	puts("main-main");
+	puts("11");
 	return 0;
 }

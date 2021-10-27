@@ -403,9 +403,12 @@ static inline void do_balance_erase(SqStack* stack, AVLTree* tree)
 		unsigned char rh = _H(R_CHILD(tmpRoot));
 		unsigned char nh = (lh > rh ? lh : rh) + 1;
 		char factor = lh - rh;
-		if (tmpRoot->height == nh && factor <= 1 && factor >= -1)//写红黑树删除的时候突然想到,AVL树的删除好像也不需要回溯到到根节点
-			break;
-		tmpRoot->height = nh;
+		if (tmpRoot->height == nh){//写红黑树删除的时候突然想到,AVL树的删除好像也不需要回溯到到根节点
+			if (factor <= 1 && factor >= -1)
+				break;
+		}
+		else
+			tmpRoot->height = nh;
 		if (factor > 1){
 			AVLNode* lc = L_CHILD(tmpRoot);
 			AVLNode* parent = NULL;

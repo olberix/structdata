@@ -53,7 +53,7 @@ int main()
 			AVLTree().erase(tree, &key);
 	}
 	// AVLTree().clear(tree);
-	int arry[] = {2,8,10,15,25,27,32,50,55,60,78,80,455,421,56654,43,44,224,3,45,64,4,21,41,54,5};
+	int arry[] = {2,8,10,15,25,27,32,50,55,60,78,80,455,421,566,43,44,224,3,45,64,4,21,41,54,5};
 	for (size_t i = 0; i < sizeof(arry) / sizeof(int); i++){
 		key.a = arry[i];
 		val.a = arry[i];
