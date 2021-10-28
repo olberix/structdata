@@ -217,20 +217,25 @@ static void insert(RBTree* tree, const void* pKey, const void* pValue)
 	}
 }
 
-static inline void reset_parent_point(RBNode* P, RBNode* rlc, RBNode* C)
+static inline void reset_parent_point(RBTree* tree, RBNode* P, RBNode* rlc, RBNode* C)
 {
-	if (P->lchild == rlc)
-		P->lchild = C;
+	if (P){//非根节点
+		if (P->lchild == rlc)
+			P->lchild = C;
+		else
+			P->rchild = C;
+	}//根节点
 	else
-		P->rchild = C;
+		tree->root = C;
 }
 
-static void do_balance_erase(RBTree* tree, RBNode* rlc)
+/*非递归实现*/
+static inline void do_balance_erase(RBTree* tree, RBNode* rlc)
 {
 	RBNode* P = rlc->parent;
 	//红色结点-无孩子
 	if (rlc->color == RB_RED){
-		reset_parent_point(P, rlc, NULL);
+		reset_parent_point(tree, P, rlc, NULL);
 		return;
 	}
 	RBNode* C = rlc->lchild;
@@ -238,17 +243,14 @@ static void do_balance_erase(RBTree* tree, RBNode* rlc)
 		C = rlc->rchild;
 	//黑色结点-仅有一个(红色)孩子
 	if (C){
-		if (P)//非根节点
-			reset_parent_point(P, rlc, C);
-		else//根节点
-			tree->root = C;
+		reset_parent_point(tree, P, rlc, C);
 		C->parent = P;
 		C->color = RB_BLACK;
 		return;
 	}
 	//黑色结点(根节点)-无孩子
 	if (!P){
-		tree->root = NULL;
+		reset_parent_point(tree, NULL, NULL, NULL);
 		return;
 	}
 	//黑色结点(非根节点)-无孩子
@@ -271,7 +273,7 @@ static void do_balance_erase(RBTree* tree, RBNode* rlc)
 					break;
 				}
 				RBNode* SR = S->rchild;
-				//SR为红色(SL,SR同为红色时可以选择前后两步任意操作,不同操作会导致红黑树表现不同)
+				//SR为红色(SL,SR同为红色时可以选择前后两步任意操作,不同选择会导致红黑树表现不同)
 				if (SR && SR->color == RB_RED){
 					left_rotation(tree, S);
 					right_rotation(tree, P);
@@ -285,10 +287,10 @@ static void do_balance_erase(RBTree* tree, RBNode* rlc)
 					P->color = RB_BLACK;
 					break;
 				}
-				pivot = P;//P为黑色
+				pivot = P;//P为黑色,递归判断
 				P = P->parent;
 			}
-			//S为红色
+			//S为红色,递归判断
 			else{
 				right_rotation(tree, P);
 				P->color ^= 0x1;
@@ -310,7 +312,7 @@ static void do_balance_erase(RBTree* tree, RBNode* rlc)
 					break;
 				}
 				RBNode* SL = S->lchild;
-				//SL为红色
+				//SL为红色(SR,SL同为红色时可以选择前后两步任意操作,不同选择会导致红黑树表现不同)
 				if (SL && SL->color == RB_RED){
 					right_rotation(tree, S);
 					left_rotation(tree, P);
@@ -324,10 +326,10 @@ static void do_balance_erase(RBTree* tree, RBNode* rlc)
 					P->color = RB_BLACK;
 					break;
 				}
-				pivot = P;//P为黑色
+				pivot = P;//P为黑色,递归判断
 				P = P->parent;
 			}
-			//S为红色
+			//S为红色,递归判断
 			else{
 				left_rotation(tree, P);
 				P->color ^= 0x1;
@@ -335,7 +337,7 @@ static void do_balance_erase(RBTree* tree, RBNode* rlc)
 			}
 		}
 	}
-	reset_parent_point(rlc->parent, rlc, NULL);
+	reset_parent_point(tree, rlc->parent, rlc, NULL);
 }
 
 static void erase(RBTree* tree, const void* pKey)
