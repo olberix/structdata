@@ -7,8 +7,7 @@ static SqList* create(size_t ESize, const size_t* pLSize)
 	POINTCREATE(SqList*, ret, SqList, sizeof(SqList));
 	size_t _size = INIT_SIZE;
 	if (pLSize)
-		if (*pLSize > _size)
-			_size = *pLSize;
+		_size = *pLSize;
 	POINTCREATE(EMPTYDEF, ret->pElems, void, ESize * _size);
 	POINTCREATE(EMPTYDEF, ret->tmpRet, void, ESize);
 	ret->e_S = ESize;
