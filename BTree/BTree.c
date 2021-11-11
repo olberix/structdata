@@ -25,7 +25,7 @@ static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc,
 	else{
 		pH->keySize = keySize;
 		pH->valSize = valSize;
-		pH->pageSize = pageSize;
+		pH->pageSize = getpagesize();
 		ssize_t num = write(bt->fd, pH, sizeof(HeaderNode));
 		CONDCHECK(num == sizeof(HeaderNode), STATUS_WRERROR);
 	}
@@ -35,11 +35,27 @@ static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc,
 	return bt;
 }
 
-static void destroy(BTree** sbt)
+static inline void destroy(BTree** sbt)
 {
 	FREE((*sbt)->tmpRet);
 	fsync((*sbt)->fd);
 	close((*sbt)->fd);
+	FREE(*sbt);
+}
+
+static void level_order_traverse(BTree* bt, BForEachFuncT func)
+{
+
+}
+
+static void traverse(BTree* bt, BForEachFuncT func)
+{
+
+}
+
+static void insert(BTree* bt, const void* pKey, const void* pValue)
+{
+
 }
 
 inline const BTreeOp* GetBTreeOpStruct()
