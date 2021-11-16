@@ -15,13 +15,14 @@ enum StatusCode{
 	STATUS_NOELEM = 2,
 	STATUS_SIZEERROR = 3,
 	STATUS_NULLFUNC = 4,
-	STATUS_FDERROR = 5,
-	STATUS_RDERROR = 6,
-	STATUS_WRERROR = 7,
+	STATUS_DEERROR = 5,
+	STATUS_FDERROR = 6,
+	STATUS_RDERROR = 7,
+	STATUS_WRERROR = 8,
 };
 
 static const char* errStr[] = {
-	"invalid index", "overflow", "no elem", "elem size error", "null function", "file descriptor error",
+	"invalid index", "overflow", "no elem", "elem size error", "null function", "degree error", "file descriptor error",
 	"read error", "write error",
 };
 
@@ -34,7 +35,7 @@ static const char* errStr[] = {
 #ifdef DEBUG
 #define CONDCHECK(con, code) do{\
 	if (!(con)){\
-		if ((code) <= 4)\
+		if ((code) <= 5)\
 			fprintf(stderr, "%s\n", errStr[code]);\
 		else\
 			perror(errStr[code]);\

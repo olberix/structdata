@@ -21,7 +21,7 @@ int main(int argc, char const *argv[])
 	for (int i = 0; i < 4096 / 8; i++){
 		write(fd, buf, strlen(buf));
 	}
-	lseek(fd, 2048, SEEK_CUR);
+	// lseek(fd, 2048, SEEK_CUR);
 	for (int i = 0; i < 4096 / 8; i++){
 		write(fd, buf, strlen(buf));
 	}
@@ -29,7 +29,7 @@ int main(int argc, char const *argv[])
 		write(fd, buf, strlen(buf));
 	}
 
-	// fallocate(fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, 0, 4096);
+	fallocate(fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, 4096, 4096);
 	// fallocate(fd, FALLOC_FL_PUNCH_HOLE, 4096, 4096);
 	off_t pos = lseek(fd, 0, SEEK_HOLE);
 	PRINTF_INT(pos);

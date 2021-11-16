@@ -8,8 +8,15 @@ typedef struct HeaderNode{
 	off_t rootPointer;
 	size_t keySize;
 	size_t valSize;
-	size_t pageSize;
+	int pageSize;
 }HeaderNode;
+
+typedef struct BNode{
+	off_t childPointers[512];
+	char pKey[2048];
+	char pValue[2048];
+	ssize_t size;
+}BNode;
 
 typedef bool(*BKeyCompareFuncT)(const void*, const void*);
 typedef void(*BForEachFuncT)(const void*, const void*);
@@ -19,6 +26,8 @@ typedef struct BTree{
 	BKeyCompareFuncT lessFunc;
 	void* tmpRet;
 	int fd;
+	unsigned short maxNC;
+	unsigned short minNC;
 }BTree;
 
 typedef struct BTreeOp{
@@ -34,3 +43,4 @@ typedef struct BTreeOp{
 
 extern const BTreeOp* GetBTreeOpStruct();
 #define BTree() (*(GetBTreeOpStruct()))
+#endif

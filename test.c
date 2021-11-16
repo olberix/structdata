@@ -10,14 +10,19 @@
 #define PRINTF_FLOAT(X) printf("%f\n", (X));
 #define PRINTF_STRING(X) printf("%s\n", (X));
 
-void aaa(int a)
+typedef struct BNode{
+	int a;
+	double b;
+}BNode;
+
+void func()
 {
-	PRINTF_STRING(#a);
+	BNode node;
+	printf("%f\n", node.b);
 }
 
 int main(int argc, char const *argv[])
 {
-	int a = 10;
-	aaa(sizeof(a));
+	func();
 	return 0;
 }
