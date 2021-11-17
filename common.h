@@ -16,9 +16,10 @@ enum StatusCode{
 	STATUS_SIZEERROR = 3,
 	STATUS_NULLFUNC = 4,
 	STATUS_DEERROR = 5,
-	STATUS_FDERROR = 6,
-	STATUS_RDERROR = 7,
-	STATUS_WRERROR = 8,
+	STATUS_OFFSETERROR = 6,
+	STATUS_FDERROR = 7,
+	STATUS_RDERROR = 8,
+	STATUS_WRERROR = 9,
 };
 
 static const char* errStr[] = {
@@ -35,7 +36,7 @@ static const char* errStr[] = {
 #ifdef DEBUG
 #define CONDCHECK(con, code) do{\
 	if (!(con)){\
-		if ((code) <= 5)\
+		if ((code) <= 6)\
 			fprintf(stderr, "%s\n", errStr[code]);\
 		else\
 			perror(errStr[code]);\

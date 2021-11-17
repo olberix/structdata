@@ -90,6 +90,8 @@ static const void* erase(DuCirLinkList* pList, size_t loc)
 	priorNode->next = nextNode;
 	memcpy(pList->tmpRet, locNode->pElem, pList->e_S);
 	pList->length--;
+	FREE(locNode->pElem);
+	FREE(locNode);
 	return pList->tmpRet;
 }
 
