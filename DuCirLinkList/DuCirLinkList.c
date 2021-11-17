@@ -6,8 +6,7 @@ static DuCirLinkList* create(size_t ESize)
 	CONDCHECK(ESize > 0, STATUS_SIZEERROR);
 	POINTCREATE(DuCirLinkList*, ret, DuCirLinkList, sizeof(DuCirLinkList));
 	POINTCREATE(EMPTYDEF, ret->tmpRet, void, ESize);
-	POINTCREATE(EMPTYDEF, HEAD(ret), DuCirLink, sizeof(DuCirLink));
-	memset(HEAD(ret), 0, sizeof(DuCirLink));
+	POINTCREATE_INIT(EMPTYDEF, HEAD(ret), DuCirLink, sizeof(DuCirLink));
 	BEGIN(ret) = HEAD(ret);
 	LAST(ret) = HEAD(ret);
 	ret->e_S = ESize;

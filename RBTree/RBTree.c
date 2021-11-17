@@ -4,8 +4,7 @@
 #include <string.h>
 
 #define ROOTCREATE(tree, root, pkey, pValue)\
-	POINTCREATE(RBNode*, (root), RBNode, sizeof(RBNode));\
-	memset((root), 0, sizeof(RBNode));\
+	POINTCREATE_INIT(RBNode*, (root), RBNode, sizeof(RBNode));\
 	POINTCREATE(EMPTYDEF, (root)->pKey, void, (tree)->keySize);\
 	POINTCREATE(EMPTYDEF, (root)->pValue, void, (tree)->valSize);\
 	memcpy((root)->pKey, pKey, (tree)->keySize);\
@@ -16,8 +15,7 @@ static RBTree* create(size_t keySize, size_t valSize, RBKeyCompareFuncT equalFun
 	CONDCHECK(keySize > 0 && valSize > 0, STATUS_SIZEERROR);
 	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC);
 	size_t tr_s = sizeof(RBTree);
-	POINTCREATE(RBTree*, ret, RBTree, tr_s);
-	memset(ret, 0, tr_s);
+	POINTCREATE_INIT(RBTree*, ret, RBTree, tr_s);
 	ret->keySize = keySize;
 	ret->valSize = valSize;
 	ret->equalFunc = equalFunc;

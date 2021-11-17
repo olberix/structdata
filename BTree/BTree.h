@@ -12,9 +12,9 @@ typedef struct HeaderNode{
 }HeaderNode;
 
 typedef struct BNode{
-	off_t childPointers[512];
-	char pKey[2048];
-	char pValue[2048];
+	off_t* childPointers;
+	void* pKey;
+	void* pValue;
 	ssize_t size;
 }BNode;
 

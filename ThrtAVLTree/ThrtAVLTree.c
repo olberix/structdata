@@ -4,8 +4,7 @@
 #include <string.h>
 
 #define ROOTCREATE(tree, root, pkey, pValue)\
-	POINTCREATE(AVLNode*, (root), AVLNode, sizeof(AVLNode));\
-	memset((root), 0, sizeof(AVLNode));\
+	POINTCREATE_INIT(AVLNode*, (root), AVLNode, sizeof(AVLNode));\
 	(root)->height = 1;\
 	POINTCREATE(EMPTYDEF, (root)->pKey, void, (tree)->keySize);\
 	POINTCREATE(EMPTYDEF, (root)->pValue, void, (tree)->valSize);\
@@ -17,8 +16,7 @@ static AVLTree* create(size_t keySize, size_t valSize, AVLKeyCompareFuncT equalF
 	CONDCHECK(keySize > 0 && valSize > 0, STATUS_SIZEERROR);
 	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC);
 	size_t tr_s = sizeof(AVLTree);
-	POINTCREATE(AVLTree*, ret, AVLTree, tr_s);
-	memset(ret, 0, tr_s);
+	POINTCREATE_INIT(AVLTree*, ret, AVLTree, tr_s);
 	ret->thrtHead.lchild = &ret->thrtHead;
 	ret->thrtHead.rchild = &ret->thrtHead;
 	ret->thrtHead.ThrtFlag = 0x3;
