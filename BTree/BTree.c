@@ -201,10 +201,11 @@ static inline bool FINDCHILDLOCATION(BTree* bt, BNode* node, const void* pKey, B
 
 static inline void MOVE2SELF(BTree* bt, BNode* node, BNodeST loc)
 {
-	memmove(node->pKey + KEYSIZE * (loc + 1), node->pKey + KEYSIZE * loc, KEYSIZE * (node->size - loc));
-	memmove(node->pValue + VALSIZE * (loc + 1), node->pValue + VALSIZE * loc, VALSIZE * (node->size - loc));
+	BNodeST diff = node->size - loc;
+	memmove(node->pKey + KEYSIZE * (loc + 1), node->pKey + KEYSIZE * loc, KEYSIZE * diff);
+	memmove(node->pValue + VALSIZE * (loc + 1), node->pValue + VALSIZE * loc, VALSIZE * diff);
 	if (!ISLEAF(node))
-		memmove(node->childPointers + loc + 2, node->childPointers + loc + 1, node->size - loc);
+		memmove(node->childPointers + loc + 2, node->childPointers + loc + 1, diff);
 }
 
 static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, BNodeST* rrp)
@@ -270,9 +271,9 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 	off_t pointer = ROOTPOINTER;
 	BNode* node = NEWBNODE(bt);
 	BNode* parent = NULL;
-	BNodeST rrp;//如果结点分割,rrp便赋值上升key在parent结点中的索引
 	do{
 		READNODE(bt, pointer, node);
+		BNodeST rrp;//如果结点分割,rrp便赋值上升key在parent结点中的索引
 		BNode* spl = SPLITNODE(bt, node, &parent, &rrp);
 		if (spl){//如果spl有值返回,parent必不为NULL
 			if (bt->equalFunc(parent->pKey + rrp * KEYSIZE, pKey)){
@@ -288,8 +289,7 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
  			}
  		}
 		BNodeST loc;
-		bool ret = FINDCHILDLOCATION(bt, node, pKey, &loc);
-		if (!ret){
+		if (!FINDCHILDLOCATION(bt, node, pKey, &loc)){
 			memcpy(node->pValue + loc * VALSIZE, pValue, VALSIZE);
 			break;
 		}
