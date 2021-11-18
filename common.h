@@ -77,8 +77,7 @@ static const char* errStr[] = {
 	CONDCHECK(point, STATUS_OVERFLOW);
 
 #define POINTCREATE_INIT(def, point, type, size)\
-	def point = (type*)malloc(size);\
-	CONDCHECK(point, STATUS_OVERFLOW);\
+	POINTCREATE(def, point, type, size);\
 	memset(point, 0, size);
 
 #define TOCONSTANT(type, point) (*(type*)point)

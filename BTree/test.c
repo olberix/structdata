@@ -42,12 +42,13 @@ void foreach(const void* pKey, const void* pValue)
 
 int main(int argc, char const *argv[])
 {
-	BTree* bt = BTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "cc.DATA");
-	TYKEY key = {12, 0.32323277};
-	TYVALUE val = {15, 17.8116, 'a'};
-	BTree().insert(bt, &key, &val);
-	BTree().traverse(bt, foreach);
-	// BTree().level_order_traverse(bt, foreach);
-	BTree().destroy(&bt);
+	// BTree* bt = BTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "cc.DATA");
+	// TYKEY key = {12, 0.32323277};
+	// TYVALUE val = {15, 17.8116, 'a'};
+	// BTree().insert(bt, &key, &val);
+	// BTree().traverse(bt, foreach);
+	// // BTree().level_order_traverse(bt, foreach);
+	// BTree().destroy(&bt);
+	puts("11111");
 	return 0;
 }

@@ -11,11 +11,13 @@ typedef struct HeaderNode{
 	int pageSize;
 }HeaderNode;
 
+typedef ssize_t BNodeST;
 typedef struct BNode{
 	off_t* childPointers;
 	void* pKey;
 	void* pValue;
-	ssize_t size;
+	off_t selfPoint;//标记这个node在文件的偏移位置,为0时代表新插入的node,还没有写入文件
+	BNodeST size;
 }BNode;
 
 typedef bool(*BKeyCompareFuncT)(const void*, const void*);
