@@ -82,12 +82,14 @@ static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc,
 	CONDCHECK(bt->fd > 0, STATUS_FDERROR);
 	if (flag == 0){//文件存在,代表已经创建
 		CONDCHECK(read(bt->fd, &(bt->head), sizeof(HeaderNode)) == sizeof(HeaderNode), STATUS_RDERROR);
-		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == getpagesize(), STATUS_SIZEERROR);
+		// CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == getpagesize(), STATUS_SIZEERROR);
+		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == 120, STATUS_SIZEERROR);
 	}
 	else{
 		KEYSIZE = keySize;
 		VALSIZE = valSize;
-		PAGESIZE = getpagesize();
+		// PAGESIZE = getpagesize();
+		PAGESIZE = 120;
 		WRITEHEADER(bt);
 	}
 	POINTCREATE(EMPTYDEF, bt->tmpRet, void, valSize);
@@ -173,7 +175,7 @@ static inline bool FINDCHILDLOCATION(BTree* bt, BNode* node, const void* pKey, B
 			return false;
 		}
 		if (bt->lessFunc(node->pKey + mid * KEYSIZE, pKey)){
-			if (mid == 0){
+			if (mid == 0 || last_mid == mid){
 				*loc = 0;
 				return true;
 			}
@@ -185,7 +187,7 @@ static inline bool FINDCHILDLOCATION(BTree* bt, BNode* node, const void* pKey, B
 			mid = mid / 2;
 		}
 		else{
-			if (mid == node->size){
+			if (mid == node->size || last_mid == mid){
 				*loc = node->size;
 				return true;
 			}
@@ -214,25 +216,23 @@ static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, BNodeST*
 	if (bt->maxNC <= node->size){
 		spl = NEWBNODE(bt);
 		const BNodeST raise_I = node->size / 2;
-		const BNodeST node_I = raise_I - 1;
 		const BNodeST spl_I = raise_I + 1;
 		//移动node数据到分裂结点--begin--
 		spl->size = node->size - 1 - raise_I;
 		memcpy(spl->pKey, node->pKey + spl_I * KEYSIZE, spl->size * KEYSIZE);
 		memcpy(spl->pValue, node->pValue + spl_I * VALSIZE, spl->size * VALSIZE);
-		memcpy(spl->childPointers, node->childPointers + spl_I, (spl->size + 1) * sizeof(off_t));
+		if (ISLEAF(node))
+			memcpy(spl->childPointers, node->childPointers + spl_I, (spl->size + 1) * sizeof(off_t));
 		//--end--
 		WRITENODE(bt, spl);
 		if (*pparent){//非根节点
-			BNodeST loc;
-			FINDCHILDLOCATION(bt, *pparent, node->pKey, &loc);
-			*rrp = loc;
-			if (loc < (*pparent)->size)//移动父结点自身数据
-				MOVE2SELF(bt, *pparent, loc);
+			FINDCHILDLOCATION(bt, *pparent, node->pKey, rrp);
+			if (*rrp < (*pparent)->size)//移动父结点自身数据
+				MOVE2SELF(bt, *pparent, *rrp);
 			//raise_I坐标数据上移父结点
-			memcpy((*pparent)->pKey + KEYSIZE * loc, node->pKey + KEYSIZE * raise_I, KEYSIZE);
-			memcpy((*pparent)->pValue + VALSIZE * loc, node->pValue + VALSIZE * raise_I, VALSIZE);
-			memcpy((*pparent)->childPointers + loc + 1, &(spl->selfPoint), sizeof(off_t));
+			memcpy((*pparent)->pKey + KEYSIZE * (*rrp), node->pKey + KEYSIZE * raise_I, KEYSIZE);
+			memcpy((*pparent)->pValue + VALSIZE * (*rrp), node->pValue + VALSIZE * raise_I, VALSIZE);
+			memcpy((*pparent)->childPointers + (*rrp) + 1, &(spl->selfPoint), sizeof(off_t));
 			(*pparent)->size += 1;
 			WRITENODE(bt, *pparent);
 		}
@@ -249,7 +249,7 @@ static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, BNodeST*
 			*pparent = newRoot;
 			*rrp = 0;
 		}
-		node->size = node_I;
+		node->size -= (spl->size + 1);
 		WRITENODE(bt, node);
 	}
 	return spl;
@@ -259,9 +259,9 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 {
 	if (!ROOTPOINTER){
 		BNode* node = NEWBNODE(bt);
-		node->size = 1;
 		memcpy(node->pKey, pKey, KEYSIZE);
 		memcpy(node->pValue, pValue, VALSIZE);
+		node->size = 1;
 		WRITENODE(bt, node);
 		ROOTPOINTER = node->selfPoint;
 		WRITEHEADER(bt);
@@ -298,11 +298,11 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 				MOVE2SELF(bt, node, loc);
 			memcpy(node->pKey + loc * KEYSIZE, pKey, KEYSIZE);
 			memcpy(node->pValue + loc * VALSIZE, pValue, VALSIZE);
+			node->size += 1;
 			break;
 		}
-		else{
+		else
 			pointer = node->childPointers[loc];
-		}
 		BNode* tmp = parent;
 		parent = node;
 		node = tmp;
@@ -311,9 +311,8 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 	}while(true);
 	WRITENODE(bt, node);
 	RELEASEBNODE(&node);
-	if (parent){
+	if (parent)
 		RELEASEBNODE(&parent);
-	}
 }
 
 static void erase(BTree* bt, const void* pKey)
