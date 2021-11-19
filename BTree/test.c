@@ -48,26 +48,28 @@ int main(int argc, char const *argv[])
 	// for (int i = 0; i < 750000; i++){
 	// 	key.a = i;
 	// 	key.b = i + 0.5;
-	// 	val.a = 2 * i;
-	// 	val.b = val.a + 0.5;
+	// 	val.a = 3 * i + 1;
+	// 	val.b = val.a + 0.123;
 	// 	val.c = 'e';
 	// 	BTree().insert(bt, &key, &val);
 	// }
+
+
 	// BTree().traverse(bt, foreach);
 	// puts("=======================================================");
 	// puts("=======================================================");
 	// BTree().level_order_traverse(bt, foreach);
-	int a[] = {0, 1, 100, 500, 2000, 10000, 15000, 30000, 50000, \
-		80000, 120000, 250000, 370000, 370010, 480000, 480001, 590000, 700000,700001, 749998, 749995};
-	for (unsigned int i = 0; i < sizeof(a) / sizeof(int); i++){
-		key.a = a[i];
+
+	for(int i = 0; i < 750000; i++){//user:0.648s sys:3.227s 这内存拷贝真的快
+		key.a = i;
 		key.b = key.a + 0.5;
 		val = TOCONSTANT(TYVALUE, BTree().at(bt, &key));
-		if (!(val.a == key.a * 2 && val.b == val.a + 0.5)){
+		if (!(val.a == key.a * 3 + 1 && val.b == val.a + 0.123)){
 			puts("error---------");
 			break;
 		}
-		puts("true---------");
+		if (i % 10000 == 0)
+			puts("true---------");
 	}
 	BTree().destroy(&bt);
 	return 0;
