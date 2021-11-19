@@ -83,13 +83,13 @@ static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc,
 	if (flag == 0){//文件存在,代表已经创建
 		CONDCHECK(read(bt->fd, &(bt->head), sizeof(HeaderNode)) == sizeof(HeaderNode), STATUS_RDERROR);
 		// CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == getpagesize(), STATUS_SIZEERROR);
-		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == 120, STATUS_SIZEERROR);
+		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == 160, STATUS_SIZEERROR);
 	}
 	else{
 		KEYSIZE = keySize;
 		VALSIZE = valSize;
 		// PAGESIZE = getpagesize();
-		PAGESIZE = 120;
+		PAGESIZE = 160;
 		WRITEHEADER(bt);
 	}
 	POINTCREATE(EMPTYDEF, bt->tmpRet, void, valSize);
@@ -133,6 +133,9 @@ static void level_order_traverse(BTree* bt, BForEachFuncT func)
 				DlQueue().push(queue, node->childPointers + i);
 		for (BNodeST i = 0; i < node->size; i++)
 			func(node->pKey + KEYSIZE * i, node->pValue + VALSIZE * i);
+#ifdef DEBUG
+		puts("-----");
+#endif
 	}
 	RELEASEBNODE(&node);
 }
@@ -221,7 +224,7 @@ static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, BNodeST*
 		spl->size = node->size - 1 - raise_I;
 		memcpy(spl->pKey, node->pKey + spl_I * KEYSIZE, spl->size * KEYSIZE);
 		memcpy(spl->pValue, node->pValue + spl_I * VALSIZE, spl->size * VALSIZE);
-		if (ISLEAF(node))
+		if (!ISLEAF(node))
 			memcpy(spl->childPointers, node->childPointers + spl_I, (spl->size + 1) * sizeof(off_t));
 		//--end--
 		WRITENODE(bt, spl);

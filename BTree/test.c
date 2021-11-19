@@ -43,16 +43,16 @@ void foreach(const void* pKey, const void* pValue)
 int main(int argc, char const *argv[])
 {
 	BTree* bt = BTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "cc.DATA");
-	// TYKEY key;
-	// TYVALUE val;
-	// for (int i = 0; i < 10; i++){
-	// 	key.a = i;
-	// 	key.b = i + 0.5;
-	// 	val.a = 2 * i;
-	// 	val.b = val.a + 0.5;
-	// 	val.c = 'c';
-	// 	BTree().insert(bt, &key, &val);
-	// }
+	TYKEY key;
+	TYVALUE val;
+	for (int i = 0; i < 9; i++){
+		key.a = i;
+		key.b = i + 0.5;
+		val.a = 2 * i;
+		val.b = val.a + 0.5;
+		val.c = 'c';
+		BTree().insert(bt, &key, &val);
+	}
 	BTree().traverse(bt, foreach);
 	puts("=======================================================");
 	puts("=======================================================");
