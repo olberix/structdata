@@ -45,18 +45,23 @@ int main(int argc, char const *argv[])
 	BTree* bt = BTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "cc.DATA");
 	TYKEY key;
 	TYVALUE val;
-	for (int i = 0; i < 9; i++){
-		key.a = i;
-		key.b = i + 0.5;
-		val.a = 2 * i;
-		val.b = val.a + 0.5;
-		val.c = 'd';
-		BTree().insert(bt, &key, &val);
-	}
-	BTree().traverse(bt, foreach);
-	puts("=======================================================");
-	puts("=======================================================");
-	BTree().level_order_traverse(bt, foreach);
+	// for (int i = 0; i < 500000; i++){
+	// 	key.a = i;
+	// 	key.b = i + 0.5;
+	// 	val.a = 2 * i;
+	// 	val.b = val.a + 0.5;
+	// 	val.c = 'e';
+	// 	BTree().insert(bt, &key, &val);
+	// }
+	// BTree().traverse(bt, foreach);
+	// puts("=======================================================");
+	// puts("=======================================================");
+	// BTree().level_order_traverse(bt, foreach);
+	key.a = 156000;
+	key.b = 156000.5;
+	val = TOCONSTANT(TYVALUE, BTree().at(bt, &key));
+	PRINTF_INT(val.a);
+	printf("%lf\n", val.b);
 	BTree().destroy(&bt);
 	return 0;
 }

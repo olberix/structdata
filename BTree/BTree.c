@@ -82,14 +82,14 @@ static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc,
 	CONDCHECK(bt->fd > 0, STATUS_FDERROR);
 	if (flag == 0){//文件存在,代表已经创建
 		CONDCHECK(read(bt->fd, &(bt->head), sizeof(HeaderNode)) == sizeof(HeaderNode), STATUS_RDERROR);
-		// CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == getpagesize(), STATUS_SIZEERROR);
-		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == 160, STATUS_SIZEERROR);
+		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == getpagesize(), STATUS_SIZEERROR);
+		// CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == 160, STATUS_SIZEERROR);
 	}
 	else{
 		KEYSIZE = keySize;
 		VALSIZE = valSize;
-		// PAGESIZE = getpagesize();
-		PAGESIZE = 160;
+		PAGESIZE = getpagesize();
+		// PAGESIZE = 160;
 		WRITEHEADER(bt);
 	}
 	POINTCREATE(EMPTYDEF, bt->tmpRet, void, valSize);
@@ -167,12 +167,16 @@ static inline void traverse(BTree* bt, BForEachFuncT func)
 	__in_order_traverse(bt, ROOTPOINTER, func);
 }
 
-/*二分法查找pKey位于对比结点的位置*/
+/*
+二分法查找pKey位于对比结点的位置
+todo这个破函数死循环了n次,目前看来已经正常了,但总觉得有更好的实现
+*/
 static inline bool FINDCHILDLOCATION(BTree* bt, BNode* node, const void* pKey, BNodeST* loc)
 {
-	BNodeST mid = node->size / 2;
-	BNodeST last_mid = -100;
+	BNodeST left = 0, right = node->size;
+	BNodeST last_mid = -100, mid;
 	do{
+		mid = (right + left) / 2;
 		if (bt->equalFunc(node->pKey + mid * KEYSIZE, pKey)){
 			*loc = mid;
 			return false;
@@ -182,10 +186,13 @@ static inline bool FINDCHILDLOCATION(BTree* bt, BNode* node, const void* pKey, B
 				*loc = mid;
 				return true;
 			}
-			last_mid = mid;
-			mid = mid / 2;
+			right = mid;
 		}
 		else{
+			if (last_mid == mid){
+				*loc = right;
+				return true;
+			}
 			if (mid == node->size - 1){
 				*loc = node->size;
 				return true;
@@ -194,9 +201,9 @@ static inline bool FINDCHILDLOCATION(BTree* bt, BNode* node, const void* pKey, B
 				*loc = last_mid;
 				return true;
 			}
-			last_mid = mid;
-			mid = (mid + node->size) / 2;
+			left = mid;
 		}
+		last_mid = mid;
 	}while(true);
 }
 
@@ -300,8 +307,7 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 			node->size += 1;
 			break;
 		}
-		else
-			pointer = node->childPointers[loc];
+		pointer = node->childPointers[loc];
 		BNode* tmp = parent;
 		parent = node;
 		node = tmp;
@@ -321,7 +327,26 @@ static void erase(BTree* bt, const void* pKey)
 
 static const void* at(BTree* bt, const void* pKey)
 {
-
+	if (!ROOTPOINTER)
+		return NULL;
+	off_t pointer = ROOTPOINTER;
+	BNode* node = NEWBNODE(bt);
+	do{
+		READNODE(bt, pointer, node);
+		BNodeST loc;
+		if (FINDCHILDLOCATION(bt, node, pKey, &loc)){
+			if (ISLEAF(node)){
+				RELEASEBNODE(&node);
+				return NULL;
+			}
+			pointer = node->childPointers[loc];
+		}
+		else{
+			memcpy(bt->tmpRet, node->pValue + loc * VALSIZE, VALSIZE);
+			RELEASEBNODE(&node);
+			return bt->tmpRet;
+		}
+	}while(true);
 }
 
 static void change(BTree* bt, const void* pKey, const void* pValue)

@@ -23,8 +23,8 @@ void func()
 
 int main(int argc, char const *argv[])
 {
-	char str[256] = "abcdef";
-	memmove(str + 3, str + 2, 4);
-	PRINTF_STRING(str);
+	int a = 100, b;
+	PRINTF_INT(a);
+	PRINTF_INT(b);
 	return 0;
 }
