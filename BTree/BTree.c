@@ -193,10 +193,6 @@ static inline bool FINDCHILDLOCATION(BTree* bt, BNode* node, const void* pKey, B
 				*loc = right;
 				return true;
 			}
-			if (mid == node->size - 1){
-				*loc = node->size;
-				return true;
-			}
 			if (last_mid - 1 == mid){
 				*loc = last_mid;
 				return true;
