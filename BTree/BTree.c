@@ -171,18 +171,14 @@ static inline void traverse(BTree* bt, BForEachFuncT func)
 static inline bool FINDCHILDLOCATION(BTree* bt, BNode* node, const void* pKey, BNodeST* loc)
 {
 	BNodeST mid = node->size / 2;
-	BNodeST last_mid = mid;
+	BNodeST last_mid = -100;
 	do{
 		if (bt->equalFunc(node->pKey + mid * KEYSIZE, pKey)){
 			*loc = mid;
 			return false;
 		}
 		if (bt->lessFunc(node->pKey + mid * KEYSIZE, pKey)){
-			if (mid == 0 || last_mid == mid){
-				*loc = 0;
-				return true;
-			}
-			if (last_mid + 1 == mid){
+			if (mid == 0 || last_mid + 1 == mid){
 				*loc = mid;
 				return true;
 			}
@@ -190,7 +186,7 @@ static inline bool FINDCHILDLOCATION(BTree* bt, BNode* node, const void* pKey, B
 			mid = mid / 2;
 		}
 		else{
-			if (mid == node->size || last_mid == mid){
+			if (mid == node->size - 1){
 				*loc = node->size;
 				return true;
 			}

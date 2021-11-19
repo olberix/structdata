@@ -50,7 +50,7 @@ int main(int argc, char const *argv[])
 		key.b = i + 0.5;
 		val.a = 2 * i;
 		val.b = val.a + 0.5;
-		val.c = 'c';
+		val.c = 'd';
 		BTree().insert(bt, &key, &val);
 	}
 	BTree().traverse(bt, foreach);
