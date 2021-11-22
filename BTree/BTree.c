@@ -27,9 +27,6 @@ static inline void READNODE(BTree* bt, off_t pointer, BNode* node)
 	node->selfPointer = pointer;
 	BNodeST _size = sizeof(node->size);
 	CONDCHECK(read(bt->fd, &(node->size), _size) == _size, STATUS_RDERROR);
-	if (pointer != ROOTPOINTER && (node->size > bt->maxNC && node->size < bt->minNC)){
-		puts("-----sssssss");
-	}
 	_size = node->size * KEYSIZE;
 	CONDCHECK(read(bt->fd, node->pKey, _size) == _size, STATUS_RDERROR);
 	_size = node->size * VALSIZE;
@@ -53,9 +50,6 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 	else
 		lseek(bt->fd, offset, SEEK_SET);
 	CONDCHECK(offset > 0 && offset % PAGESIZE == 0, STATUS_OFFSETERROR);
-	if (node->selfPointer != ROOTPOINTER && (node->size > bt->maxNC && node->size < bt->minNC)){
-		puts("-----aaaaaaaa");
-	}
 	POINTCREATE_INIT(char*, tmp, char, PAGESIZE);
 	memcpy(tmp, &(node->size), sizeof(node->size));
 	BNodeST _size = sizeof(node->size);
@@ -65,8 +59,6 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 	if (!ISLEAF(node)){
 		_size += VALSIZE * node->size;
 		memcpy(tmp + _size, node->childPointers, (node->size + 1) * sizeof(off_t));
-		if (node->childPointers[node->size] == 0)
-			puts("-----++++++++++");
 	}
 	CONDCHECK(write(bt->fd, tmp, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
 }
