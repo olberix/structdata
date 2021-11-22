@@ -322,28 +322,33 @@ static void erase(BTree* bt, const void* pKey)
 {
 	if (!ROOTPOINTER)
 		return;
-	SqStack* stack = SqStack().create(sizeof(BNode*), NULL);
+	SqStack* stack_node = SqStack().create(sizeof(BNode*), NULL);
+	SqStack* stack_loc = SqStack().create(sizeof(BNodeST), NULL);
 	off_t pointer = ROOTPOINTER;
 	BNodeST loc;
-	BNode* node;//node为最终删除关键字所在的叶子结点,loc为删除位置,stack记录了路径信息
+	BNode* node;//node为最终删除关键字所在的叶子结点,loc为删除位置,stack_node&stack_loc记录了路径信息
 	while(true){
 		node = NEWBNODE(bt);
 		READNODE(bt, pointer, node);
 		if (FINDCHILDLOCATION(bt, node, pKey, &loc)){
 			if (ISLEAF(node)){
 				RELEASEBNODE(&node);
-				while (!SqStack().empty(stack)){
-					BNode* vv = TOCONSTANT(BNode*, SqStack().pop(stack));
+				while (!SqStack().empty(stack_node)){
+					BNode* vv = TOCONSTANT(BNode*, SqStack().pop(stack_node));
 					RELEASEBNODE(&vv);
 				}
+				SqStack().destroy(&stack_node);
+				SqStack().destroy(&stack_loc);
 				return;
 			}
-			SqStack().push(stack, &node);
+			SqStack().push(stack_node, &node);
+			SqStack().push(stack_loc, &loc);
 			pointer = node->childPointers[loc];
 			continue;
 		}
 		if (!ISLEAF(node)){
-			SqStack().push(stack, &node);
+			SqStack().push(stack_node, &node);
+			SqStack().push(stack_loc, &loc);
 			BNode* rplc;
 			pointer = node->childPointers[loc];//找前驱替代,这样替代的叶子结点可以直接改size,而不用移动数据
 			do{
@@ -352,20 +357,41 @@ static void erase(BTree* bt, const void* pKey)
 				if (ISLEAF(rplc)){
 					memcpy(node->pKey + loc * KEYSIZE, rplc->pKey + (rplc->size - 1) * KEYSIZE, KEYSIZE);
 					memcpy(node->pValue + loc * VALSIZE, rplc->pValue + (rplc->size - 1) * VALSIZE, VALSIZE);
+					WRITENODE(bt, node);
 					node = rplc;
 					loc = rplc->size - 1;
 					break;
 				}
-				SqStack().push(stack, &rplc);
+				SqStack().push(stack_node, &rplc);
+				SqStack().push(stack_loc, &(rplc->size));
 				pointer = rplc->childPointers[rplc->size];
 			}while(true);
 		}
 		break;
 	}
 	//删除操作
-
+	if (loc != node->size - 1){
+		BNodeST diff = node->size - 1 - loc;
+		memmove(node->pKey + loc * KEYSIZE, node->pKey + (loc + 1) * KEYSIZE, diff * KEYSIZE);
+		memmove(node->pValue + loc * VALSIZE, node->pValue + (loc + 1) * VALSIZE, diff * VALSIZE);
+	}
+	node->size -= 1;
 	//平衡操作
-	// if ()
+	for (int i = 0; i < 1; i++){
+		if (node->size >= bt->minNC)
+			break;
+		BNode* parent = TOCONSTANT(BNode*, SqStack().get_top(stack_node));
+		loc = TOCONSTANT(BNodeST, SqStack().get_top(stack_loc));
+		
+	}
+	WRITENODE(bt, node);
+	RELEASEBNODE(&node);
+	while(!SqStack().empty(stack_node)){
+		BNode* vv = TOCONSTANT(BNode*, SqStack().pop(stack_node));
+		RELEASEBNODE(&vv);
+	}
+	SqStack().destroy(&stack_node);
+	SqStack().destroy(&stack_loc);
 }
 
 static const void* at(BTree* bt, const void* pKey)
