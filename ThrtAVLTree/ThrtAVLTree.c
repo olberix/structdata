@@ -125,6 +125,7 @@ static void pre_order_traverse_st(AVLTree* tree, AVLForEachFuncT func)
 			root = R_CHILD(root);
 		}
 	}
+	SqStack().destroy(&stack);
 }
 
 /*中序遍历-栈*/
@@ -144,6 +145,7 @@ static void in_order_traverse_st(AVLTree* tree, AVLForEachFuncT func)
 			root = R_CHILD(root);
 		}
 	}
+	SqStack().destroy(&stack);
 }
 
 /*后序遍历-栈*/
@@ -170,6 +172,7 @@ static void post_order_traverse_st(AVLTree* tree, AVLForEachFuncT func)
 			}
 		}
 	}
+	SqStack().destroy(&stack);
 }
 
 /*中序遍历-线索*/
@@ -206,6 +209,7 @@ static void level_order_traverse(AVLTree* tree, AVLForEachFuncT func)
 		if (tmpRoot)
 			DlQueue().push(queue, &tmpRoot);
 	}
+	DlQueue().destroy(&queue);
 }
 
 static inline void traverse(AVLTree* tree, AVLForEachFuncT func)
@@ -367,7 +371,7 @@ static void insert(AVLTree* tree, const void* pKey, const void* pValue)
 		SqStack().push(stack, &root);
 		if (tree->equalFunc(root->pKey, pKey)){
 			memcpy(root->pValue, pValue, tree->valSize);
-			return;
+			break;
 		}
 		if (tree->lessFunc(root->pKey, pKey)){
 			if (L_CHILD(root))
@@ -376,7 +380,7 @@ static void insert(AVLTree* tree, const void* pKey, const void* pValue)
 				ROOTCREATE(tree, newRoot, pKey, pValue);
 				insert_left_child(root, newRoot);
 				do_balance_insert(stack, tree, pKey);
-				return;
+				break;
 			}
 		}
 		else{
@@ -386,10 +390,11 @@ static void insert(AVLTree* tree, const void* pKey, const void* pValue)
 				ROOTCREATE(tree, newRoot, pKey, pValue);
 				insert_right_child(root, newRoot);
 				do_balance_insert(stack, tree, pKey);
-				return;
+				break;
 			}
 		}
 	}
+	SqStack().destroy(&stack);
 }
 
 /*以结点高度最大的孩子和孙子为基准进行旋转,其实就是插入的逆过程*/
@@ -535,7 +540,7 @@ static void erase(AVLTree* tree, const void* pKey)
 					do_balance_erase(stack, tree);
 				}
 			}
-			return;
+			break;
 		}
 		if (tree->lessFunc(root->pKey, pKey)){
 			if (L_CHILD(root)){
@@ -543,7 +548,7 @@ static void erase(AVLTree* tree, const void* pKey)
 				root = L_CHILD(root);
 			}
 			else
-				return;
+				break;
 		}
 		else{
 			if (R_CHILD(root)){
@@ -551,9 +556,10 @@ static void erase(AVLTree* tree, const void* pKey)
 				root = R_CHILD(root);
 			}
 			else
-				return;
+				break;
 		}
 	}
+	SqStack().destroy(&stack);
 }
 
 const void* at(AVLTree* tree, const void* pKey)

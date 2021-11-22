@@ -63,6 +63,7 @@ static void level_order_traverse(RBTree* tree, RBForEachFuncT func)
 		if (tmpRoot)
 			DlQueue().push(queue, &tmpRoot);
 	}
+	DlQueue().destroy(&queue);
 }
 
 /*中序栈遍历*/
@@ -82,6 +83,7 @@ static inline void traverse(RBTree* tree, RBForEachFuncT func)
 			root = root->rchild;
 		}
 	}
+	SqStack().destroy(&stack);
 }
 
 static inline void right_rotation(RBTree* tree, RBNode* root)

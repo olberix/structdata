@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include "../DlQueue/DlQueue.h"
+#include "../SqStack/SqStack.h"
 
 extern int fsync(int);
 extern int getpagesize();
@@ -138,6 +139,7 @@ static void level_order_traverse(BTree* bt, BForEachFuncT func)
 #endif
 	}
 	RELEASEBNODE(&node);
+	DlQueue().destroy(&queue);
 }
 
 /*理论需要最大栈空间S=log(minNC+1, N) * PAGESIZE,以minNC取极端值1为例,10亿级数据S约等于30,一般内存页大小为4K,此时需求内存为120K,洒洒水啦*/
@@ -318,7 +320,52 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 
 static void erase(BTree* bt, const void* pKey)
 {
+	if (!ROOTPOINTER)
+		return;
+	SqStack* stack = SqStack().create(sizeof(BNode*), NULL);
+	off_t pointer = ROOTPOINTER;
+	BNodeST loc;
+	BNode* node;//node为最终删除关键字所在的叶子结点,loc为删除位置,stack记录了路径信息
+	while(true){
+		node = NEWBNODE(bt);
+		READNODE(bt, pointer, node);
+		if (FINDCHILDLOCATION(bt, node, pKey, &loc)){
+			if (ISLEAF(node)){
+				RELEASEBNODE(&node);
+				while (!SqStack().empty(stack)){
+					BNode* vv = TOCONSTANT(BNode*, SqStack().pop(stack));
+					RELEASEBNODE(&vv);
+				}
+				return;
+			}
+			SqStack().push(stack, &node);
+			pointer = node->childPointers[loc];
+			continue;
+		}
+		if (!ISLEAF(node)){
+			SqStack().push(stack, &node);
+			BNode* rplc;
+			pointer = node->childPointers[loc];//找前驱替代,这样替代的叶子结点可以直接改size,而不用移动数据
+			do{
+				rplc = NEWBNODE(bt);
+				READNODE(bt, pointer, rplc);
+				if (ISLEAF(rplc)){
+					memcpy(node->pKey + loc * KEYSIZE, rplc->pKey + (rplc->size - 1) * KEYSIZE, KEYSIZE);
+					memcpy(node->pValue + loc * VALSIZE, rplc->pValue + (rplc->size - 1) * VALSIZE, VALSIZE);
+					node = rplc;
+					loc = rplc->size - 1;
+					break;
+				}
+				SqStack().push(stack, &rplc);
+				pointer = rplc->childPointers[rplc->size];
+			}while(true);
+		}
+		break;
+	}
+	//删除操作
 
+	//平衡操作
+	// if ()
 }
 
 static const void* at(BTree* bt, const void* pKey)
