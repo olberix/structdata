@@ -16,7 +16,7 @@ typedef struct BNode{
 	off_t* childPointers;
 	void* pKey;
 	void* pValue;
-	off_t selfPoint;//标记这个node在文件的偏移位置,为0时代表新插入的node,还没有写入文件
+	off_t selfPointer;//标记这个node在文件的偏移位置,为0时代表新插入的node,还没有写入文件
 	BNodeST size;
 }BNode;
 

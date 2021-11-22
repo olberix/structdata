@@ -45,7 +45,16 @@ int main(int argc, char const *argv[])
 	BTree* bt = BTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "cc.DATA");
 	TYKEY key;
 	TYVALUE val;
-	// for (int i = 0; i < 750000; i++){
+	int range = 750000 * 3;
+	// for (int i = 2; i < range; i += 3){ //i=0-2
+	// 	key.a = i;
+	// 	key.b = i + 0.5;
+	// 	val.a = 3 * i + 1;
+	// 	val.b = val.a + 0.123;
+	// 	val.c = 'e';
+	// 	BTree().insert(bt, &key, &val);
+	// }
+	// for (int i = range - 1; i >= 0; i--){
 	// 	key.a = i;
 	// 	key.b = i + 0.5;
 	// 	val.a = 3 * i + 1;
@@ -60,7 +69,7 @@ int main(int argc, char const *argv[])
 	// puts("=======================================================");
 	// BTree().level_order_traverse(bt, foreach);
 
-	for(int i = 0; i < 750000; i++){//user:0.648s sys:3.227s 这内存拷贝真的快
+	for(int i = 0; i < range; i += 1){//user:0.648s sys:3.227s 这内存拷贝真的快
 		key.a = i;
 		key.b = key.a + 0.5;
 		val = TOCONSTANT(TYVALUE, BTree().at(bt, &key));
@@ -68,7 +77,7 @@ int main(int argc, char const *argv[])
 			puts("error---------");
 			break;
 		}
-		if (i % 10000 == 0)
+		if (i % 20000 == 0)
 			puts("true---------");
 	}
 	BTree().destroy(&bt);

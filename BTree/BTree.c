@@ -24,9 +24,12 @@ static void WRITEHEADER(BTree* bt)
 static inline void READNODE(BTree* bt, off_t pointer, BNode* node)
 {
 	lseek(bt->fd, pointer, SEEK_SET);
-	node->selfPoint = pointer;
+	node->selfPointer = pointer;
 	BNodeST _size = sizeof(node->size);
 	CONDCHECK(read(bt->fd, &(node->size), _size) == _size, STATUS_RDERROR);
+	if (pointer != ROOTPOINTER && (node->size > bt->maxNC && node->size < bt->minNC)){
+		puts("-----sssssss");
+	}
 	_size = node->size * KEYSIZE;
 	CONDCHECK(read(bt->fd, node->pKey, _size) == _size, STATUS_RDERROR);
 	_size = node->size * VALSIZE;
@@ -42,14 +45,17 @@ static inline bool ISLEAF(BNode* node)
 
 static inline void WRITENODE(BTree* bt, BNode* node)
 {
-	off_t offset = node->selfPoint;
+	off_t offset = node->selfPointer;
 	if (!offset){
 		offset = lseek(bt->fd, 0, SEEK_HOLE);
-		node->selfPoint = offset;
+		node->selfPointer = offset;
 	}
 	else
 		lseek(bt->fd, offset, SEEK_SET);
 	CONDCHECK(offset > 0 && offset % PAGESIZE == 0, STATUS_OFFSETERROR);
+	if (node->selfPointer != ROOTPOINTER && (node->size > bt->maxNC && node->size < bt->minNC)){
+		puts("-----aaaaaaaa");
+	}
 	POINTCREATE_INIT(char*, tmp, char, PAGESIZE);
 	memcpy(tmp, &(node->size), sizeof(node->size));
 	BNodeST _size = sizeof(node->size);
@@ -59,6 +65,8 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 	if (!ISLEAF(node)){
 		_size += VALSIZE * node->size;
 		memcpy(tmp + _size, node->childPointers, (node->size + 1) * sizeof(off_t));
+		if (node->childPointers[node->size] == 0)
+			puts("-----++++++++++");
 	}
 	CONDCHECK(write(bt->fd, tmp, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
 }
@@ -209,7 +217,7 @@ static inline void MOVE2SELF(BTree* bt, BNode* node, BNodeST loc)
 	memmove(node->pKey + KEYSIZE * (loc + 1), node->pKey + KEYSIZE * loc, KEYSIZE * diff);
 	memmove(node->pValue + VALSIZE * (loc + 1), node->pValue + VALSIZE * loc, VALSIZE * diff);
 	if (!ISLEAF(node))
-		memmove(node->childPointers + loc + 2, node->childPointers + loc + 1, diff);
+		memmove(node->childPointers + loc + 2, node->childPointers + loc + 1, sizeof(off_t) * diff);
 }
 
 static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, BNodeST* rrp)
@@ -234,7 +242,7 @@ static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, BNodeST*
 			//raise_I坐标数据上移父结点
 			memcpy((*pparent)->pKey + KEYSIZE * (*rrp), node->pKey + KEYSIZE * raise_I, KEYSIZE);
 			memcpy((*pparent)->pValue + VALSIZE * (*rrp), node->pValue + VALSIZE * raise_I, VALSIZE);
-			memcpy((*pparent)->childPointers + (*rrp) + 1, &(spl->selfPoint), sizeof(off_t));
+			memcpy((*pparent)->childPointers + (*rrp) + 1, &(spl->selfPointer), sizeof(off_t));
 			(*pparent)->size += 1;
 			WRITENODE(bt, *pparent);
 		}
@@ -242,11 +250,11 @@ static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, BNodeST*
 			BNode* newRoot = NEWBNODE(bt);
 			memcpy(newRoot->pKey, node->pKey + KEYSIZE * raise_I, KEYSIZE);
 			memcpy(newRoot->pValue, node->pValue + VALSIZE * raise_I, VALSIZE);
-			newRoot->childPointers[0] = node->selfPoint;
-			newRoot->childPointers[1] = spl->selfPoint;
+			newRoot->childPointers[0] = node->selfPointer;
+			newRoot->childPointers[1] = spl->selfPointer;
 			newRoot->size = 1;
 			WRITENODE(bt, newRoot);
-			ROOTPOINTER = newRoot->selfPoint;
+			ROOTPOINTER = newRoot->selfPointer;
 			WRITEHEADER(bt);
 			*pparent = newRoot;
 			*rrp = 0;
@@ -265,7 +273,7 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 		memcpy(node->pValue, pValue, VALSIZE);
 		node->size = 1;
 		WRITENODE(bt, node);
-		ROOTPOINTER = node->selfPoint;
+		ROOTPOINTER = node->selfPointer;
 		WRITEHEADER(bt);
 		RELEASEBNODE(&node);
 		return;
