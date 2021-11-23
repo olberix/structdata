@@ -318,29 +318,31 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 		RELEASEBNODE(&parent);
 }
 
-static inline bool ERASE_FINDREPLACE(BTree* bt, const void* pKey, BNode* node, SqStack* stack_node, SqStack* stack_loc)
+static inline bool ERASE_FINDREPLACE(BTree* bt, const void* pKey, SqStack* stack_node, SqStack* stack_loc)
 {
+	BNode* node;//node为最终删除关键字所在的叶子结点,stack_node&stack_loc记录了路径信息并且包含了node
 	BNodeST loc;
 	off_t pointer = ROOTPOINTER;
 	while(true){
 		node = NEWBNODE(bt);
 		READNODE(bt, pointer, node);
-		if (FINDKEYEXPECTLOC(bt, node, pKey, &loc)){
+		bool ret = FINDKEYEXPECTLOC(bt, node, pKey, &loc);
+		SqStack().push(stack_node, &node);
+		SqStack().push(stack_loc, &loc);
+		if (ret){
 			if (ISLEAF(node))
 				return false;
-			SqStack().push(stack_node, &node);
-			SqStack().push(stack_loc, &loc);
 			pointer = node->childPointers[loc];
 			continue;
 		}
 		if (!ISLEAF(node)){
-			SqStack().push(stack_node, &node);
-			SqStack().push(stack_loc, &loc);
 			BNode* rplc;
 			pointer = node->childPointers[loc];//找前驱替代,这样替代的叶子结点可以直接改size,而不用移动数据
 			do{
 				rplc = NEWBNODE(bt);
 				READNODE(bt, pointer, rplc);
+				SqStack().push(stack_node, &rplc);
+				SqStack().push(stack_loc, &(rplc->size));
 				if (ISLEAF(rplc)){
 					memcpy(node->pKey + loc * KEYSIZE, rplc->pKey + (rplc->size - 1) * KEYSIZE, KEYSIZE);
 					memcpy(node->pValue + loc * VALSIZE, rplc->pValue + (rplc->size - 1) * VALSIZE, VALSIZE);
@@ -349,8 +351,6 @@ static inline bool ERASE_FINDREPLACE(BTree* bt, const void* pKey, BNode* node, S
 					loc = rplc->size - 1;
 					break;
 				}
-				SqStack().push(stack_node, &rplc);
-				SqStack().push(stack_loc, &(rplc->size));
 				pointer = rplc->childPointers[rplc->size];
 			}while(true);
 		}
@@ -360,17 +360,21 @@ static inline bool ERASE_FINDREPLACE(BTree* bt, const void* pKey, BNode* node, S
 			memmove(node->pValue + loc * VALSIZE, node->pValue + (loc + 1) * VALSIZE, diff * VALSIZE);
 		}
 		node->size -= 1;
+		WRITENODE(bt, node);
 		return true;
 	}
 }
 
-static inline void ERASE_BALANCE(BTree* bt, BNode* node, SqStack* stack_node, SqStack* stack_loc)
+static inline void ERASE_BALANCE(BTree* bt, SqStack* stack_node, SqStack* stack_loc)
 {
-	if (node->size >= bt->minNC)
-		break;
-	// BNode* parent = TOCONSTANT(BNode*, SqStack().get_top(stack_node));
-	// loc = TOCONSTANT(BNodeST, SqStack().get_top(stack_loc));
+	BNode* leaf = TOCONSTANT(BNode*, SqStack().get_top(stack_node));
+	if (leaf->size >= bt->minNC)
+		return;
+	do{
+		BNode* parent = TOCONSTANT(BNode*, SqStack().pop(stack_node));
+		BNodeST loc = TOCONSTANT(BNodeST, SqStack().pop(stack_loc));
 
+	}while(!SqStack().empty(stack_node));
 }
 
 static void erase(BTree* bt, const void* pKey)
@@ -379,16 +383,10 @@ static void erase(BTree* bt, const void* pKey)
 		return;
 	SqStack* stack_node = SqStack().create(sizeof(BNode*), NULL);
 	SqStack* stack_loc = SqStack().create(sizeof(BNodeST), NULL);
-	BNodeST loc;
-	BNode* node;//node为最终删除关键字所在的叶子结点,stack_node&stack_loc记录了路径信息
-	bool ret = ERASE_FINDREPLACE(bt, pKey, node, stack_node, stack_loc);
-	if (ret){
-		//平衡操作
-		ERASE_BALANCE(bt, node, stack_node, stack_loc);
-		WRITENODE(bt, node);
-	}
+	bool ret = ERASE_FINDREPLACE(bt, pKey, stack_node, stack_loc);
+	if (ret)
+		ERASE_BALANCE(bt, stack_node, stack_loc);
 	//释放空间返回
-	RELEASEBNODE(&node);
 	while(!SqStack().empty(stack_node)){
 		BNode* vv = TOCONSTANT(BNode*, SqStack().pop(stack_node));
 		RELEASEBNODE(&vv);
