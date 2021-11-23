@@ -15,13 +15,14 @@ extern int getpagesize();
 
 static void WRITEHEADER(BTree* bt)
 {
-	POINTCREATE_INIT(char*, tmp, char, PAGESIZE);
-	memcpy(tmp, &(bt->head), sizeof(HeaderNode));
+	POINTCREATE_INIT(char*, tmpStr, char, PAGESIZE);
+	memcpy(tmpStr, &(bt->head), sizeof(HeaderNode));
 	lseek(bt->fd, 0, SEEK_SET);
-	CONDCHECK(write(bt->fd, tmp, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
+	CONDCHECK(write(bt->fd, tmpStr, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
+	FREE(tmpStr);
 }
 
-/*存储顺序:size-pKey-pValue-childPointers*/
+/*存储顺序:size-pKey-pValue-childPointers,存储的size必然大于等于1*/
 static inline void READNODE(BTree* bt, off_t pointer, BNode* node)
 {
 	lseek(bt->fd, pointer, SEEK_SET);
@@ -32,7 +33,7 @@ static inline void READNODE(BTree* bt, off_t pointer, BNode* node)
 	CONDCHECK(read(bt->fd, node->pKey, _size) == _size, STATUS_RDERROR);
 	_size = node->size * VALSIZE;
 	CONDCHECK(read(bt->fd, node->pValue, _size) == _size, STATUS_RDERROR);
-	_size = (node->size + 1) * sizeof(off_t);//文件读取node必然有值,故这里childPointers不用清0
+	_size = (node->size + 1) * sizeof(off_t);//文件读取node必然有值,页剩余空间用0填充,故这里childPointers不用清0
 	CONDCHECK(read(bt->fd, node->childPointers, _size) == _size, STATUS_RDERROR);
 }
 
@@ -43,6 +44,8 @@ static inline bool ISLEAF(BNode* node)
 
 static inline void WRITENODE(BTree* bt, BNode* node)
 {
+	if (node->size == 0)//等于0不再写,因为必然被fallocate
+		return;
 	off_t offset = node->selfPointer;
 	if (!offset){
 		offset = lseek(bt->fd, 0, SEEK_HOLE);
@@ -51,17 +54,18 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 	else
 		lseek(bt->fd, offset, SEEK_SET);
 	CONDCHECK(offset > 0 && offset % PAGESIZE == 0, STATUS_OFFSETERROR);
-	POINTCREATE_INIT(char*, tmp, char, PAGESIZE);
-	memcpy(tmp, &(node->size), sizeof(node->size));
+	POINTCREATE_INIT(char*, tmpStr, char, PAGESIZE);
+	memcpy(tmpStr, &(node->size), sizeof(node->size));
 	BNodeST _size = sizeof(node->size);
-	memcpy(tmp + _size, node->pKey, KEYSIZE * node->size);
+	memcpy(tmpStr + _size, node->pKey, KEYSIZE * node->size);
 	_size += KEYSIZE * node->size;
-	memcpy(tmp + _size, node->pValue, VALSIZE * node->size);
+	memcpy(tmpStr + _size, node->pValue, VALSIZE * node->size);
 	if (!ISLEAF(node)){
 		_size += VALSIZE * node->size;
-		memcpy(tmp + _size, node->childPointers, (node->size + 1) * sizeof(off_t));
+		memcpy(tmpStr + _size, node->childPointers, (node->size + 1) * sizeof(off_t));
 	}
-	CONDCHECK(write(bt->fd, tmp, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
+	CONDCHECK(write(bt->fd, tmpStr, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
+	FREE(tmpStr);
 }
 
 static inline BNode* NEWBNODE(BTree* bt)
@@ -71,6 +75,20 @@ static inline BNode* NEWBNODE(BTree* bt)
 	POINTCREATE(EMPTYDEF, node->pKey, void, KEYSIZE * bt->maxNC);
 	POINTCREATE(EMPTYDEF, node->pValue, void, VALSIZE * bt->maxNC);
 	return node;
+}
+
+static inline void RELEASEBNODE(BNode** nnode)
+{
+	FREE((*nnode)->pValue);
+	FREE((*nnode)->pKey);
+	FREE((*nnode)->childPointers);
+	FREE(*nnode);
+}
+
+static inline void FILERELEASE(BTree* bt, BNode* node)
+{
+	lseek(bt->fd, node->selfPointer, SEEK_SET);
+	fallocate(bt->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, 0, PAGESIZE);
 }
 
 static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc, BKeyCompareFuncT lessFunc, const char* fileName)
@@ -109,14 +127,6 @@ static inline void destroy(BTree** sbt)
 	fsync((*sbt)->fd);
 	close((*sbt)->fd);
 	FREE(*sbt);
-}
-
-static inline void RELEASEBNODE(BNode** nnode)
-{
-	FREE((*nnode)->pValue);
-	FREE((*nnode)->pKey);
-	FREE((*nnode)->childPointers);
-	FREE(*nnode);
 }
 
 static void level_order_traverse(BTree* bt, BForEachFuncT func)
@@ -205,13 +215,16 @@ static inline bool FINDKEYEXPECTLOC(BTree* bt, BNode* node, const void* pKey, BN
 	}while(true);
 }
 
-static inline void MOVE2SELF(BTree* bt, BNode* node, BNodeST loc)
+/*结点某位置数据往后移动一格*/
+static inline void MOVEBACKONESTEP(BTree* bt, BNode* node, BNodeST loc, BNodeST child_offset)
 {
+	if (loc >= node->size)
+		return;
 	BNodeST diff = node->size - loc;
 	memmove(node->pKey + KEYSIZE * (loc + 1), node->pKey + KEYSIZE * loc, KEYSIZE * diff);
 	memmove(node->pValue + VALSIZE * (loc + 1), node->pValue + VALSIZE * loc, VALSIZE * diff);
 	if (!ISLEAF(node))
-		memmove(node->childPointers + loc + 2, node->childPointers + loc + 1, sizeof(off_t) * diff);
+		memmove(node->childPointers + loc + child_offset + 1, node->childPointers + loc + child_offset, sizeof(off_t) * diff);
 }
 
 static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, BNodeST* rrp)
@@ -231,8 +244,7 @@ static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, BNodeST*
 		WRITENODE(bt, spl);
 		if (*pparent){//非根节点
 			FINDKEYEXPECTLOC(bt, *pparent, node->pKey, rrp);
-			if (*rrp < (*pparent)->size)//移动父结点自身数据
-				MOVE2SELF(bt, *pparent, *rrp);
+			MOVEBACKONESTEP(bt, *pparent, *rrp, 1);//移动父结点自身数据
 			//raise_I坐标数据上移父结点
 			memcpy((*pparent)->pKey + KEYSIZE * (*rrp), node->pKey + KEYSIZE * raise_I, KEYSIZE);
 			memcpy((*pparent)->pValue + VALSIZE * (*rrp), node->pValue + VALSIZE * raise_I, VALSIZE);
@@ -298,8 +310,7 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 			break;
 		}
 		if (ISLEAF(node)){
-			if(loc < node->size)
-				MOVE2SELF(bt, node, loc);
+			MOVEBACKONESTEP(bt, node, loc, 0);
 			memcpy(node->pKey + loc * KEYSIZE, pKey, KEYSIZE);
 			memcpy(node->pValue + loc * VALSIZE, pValue, VALSIZE);
 			node->size += 1;
@@ -328,21 +339,21 @@ static inline bool ERASE_FINDREPLACE(BTree* bt, const void* pKey, SqStack* stack
 		READNODE(bt, pointer, node);
 		bool ret = FINDKEYEXPECTLOC(bt, node, pKey, &loc);
 		SqStack().push(stack_node, &node);
-		SqStack().push(stack_loc, &loc);
 		if (ret){
 			if (ISLEAF(node))
 				return false;
 			pointer = node->childPointers[loc];
+			SqStack().push(stack_loc, &loc);
 			continue;
 		}
 		if (!ISLEAF(node)){
 			BNode* rplc;
 			pointer = node->childPointers[loc];//找前驱替代,这样替代的叶子结点可以直接改size,而不用移动数据
+			SqStack().push(stack_loc, &loc);
 			do{
 				rplc = NEWBNODE(bt);
 				READNODE(bt, pointer, rplc);
 				SqStack().push(stack_node, &rplc);
-				SqStack().push(stack_loc, &(rplc->size));
 				if (ISLEAF(rplc)){
 					memcpy(node->pKey + loc * KEYSIZE, rplc->pKey + (rplc->size - 1) * KEYSIZE, KEYSIZE);
 					memcpy(node->pValue + loc * VALSIZE, rplc->pValue + (rplc->size - 1) * VALSIZE, VALSIZE);
@@ -352,6 +363,7 @@ static inline bool ERASE_FINDREPLACE(BTree* bt, const void* pKey, SqStack* stack
 					break;
 				}
 				pointer = rplc->childPointers[rplc->size];
+				SqStack().push(stack_loc, &(rplc->size));
 			}while(true);
 		}
 		if (loc != node->size - 1){
@@ -367,13 +379,67 @@ static inline bool ERASE_FINDREPLACE(BTree* bt, const void* pKey, SqStack* stack
 
 static inline void ERASE_BALANCE(BTree* bt, SqStack* stack_node, SqStack* stack_loc)
 {
-	BNode* leaf = TOCONSTANT(BNode*, SqStack().get_top(stack_node));
-	if (leaf->size >= bt->minNC)
-		return;
+	BNode* sbl = NEWBNODE(bt);
 	do{
-		BNode* parent = TOCONSTANT(BNode*, SqStack().pop(stack_node));
+		BNode* node = TOCONSTANT(BNode*, SqStack().pop(stack_node));
+		if (node->size >= bt->minNC)//停止回溯
+			break;
+		if (SqStack().empty(stack_loc)){//到达了根节点
+			if (node->size == 0){
+				ROOTPOINTER = node->childPointers[0];
+				WRITEHEADER(bt);
+				FILERELEASE(bt, node);
+				RELEASEBNODE(&node);
+				break;
+			}
+		}
 		BNodeST loc = TOCONSTANT(BNodeST, SqStack().pop(stack_loc));
-
+		BNode* parent = TOCONSTANT(BNodeST, SqStack().get_top(stack_loc));
+		bool ret = false;
+		//这里是一个艰难的抉择,究竟是判断一个兄弟不够就合并还是判断完两个兄弟不够再选择一个合并
+		//前者做法可以让树的结点变少但是可能会增加回溯路程,后者反之(会稳定多出一次系统调用)
+		//无法预测对B树删除之后的操作,那就选择对当前删除操作较为稳定的后者做法
+		if (loc > 0){//优先往左借,往哪边借都需要移动数据,但是往左借移动自身t-2个数据,往右借移动兄弟大于等于t-1个数据
+			BNodeST __loc = loc - 1;
+			READNODE(bt, parent->childPointers[__loc], sbl);
+			if(sbl->size > bt->minNC){
+				MOVEBACKONESTEP(bt, node, 0, 0);
+				memcpy(node->pKey, parent->pKey + KEYSIZE * __loc, KEYSIZE);
+				memcpy(node->pValue, parent->pValue + VALSIZE * __loc, VALSIZE);
+				memcpy(parent->pKey + KEYSIZE * __loc, sbl->pKey + KEYSIZE * (sbl->size - 1), KEYSIZE);
+				memcpy(parent->pValue + VALSIZE * __loc, sbl->pValue + VALSIZE * (sbl->size - 1), VALSIZE);
+				if (!ISLEAF(node))
+					memcpy(node->childPointers, sbl->childPointers + sbl->size, sizeof(off_t));
+				sbl->size -= 1;
+				node->size += 1;
+				WRITENODE(bt, parent);
+				WRITENODE(bt, node);
+				WRITENODE(bt, sbl);
+				ret = true;
+			}
+		}
+		if (!ret && loc != node->size){
+			READNODE(bt, parent->childPointers[loc + 1], sbl);
+			if(sbl->size > bt->minNC){
+				memcpy(node->pKey + KEYSIZE * node->size, parent->pKey + KEYSIZE * loc, KEYSIZE);
+				memcpy(node->pValue + VALSIZE * node->size, parent->pValue + VALSIZE * loc, VALSIZE);
+				memcpy(parent->pKey + KEYSIZE * loc, sbl->pKey, KEYSIZE);
+				memcpy(parent->pValue + VALSIZE * loc, sbl->pValue, VALSIZE);
+				node->size += 1;
+				if (!ISLEAF(node))
+					memcpy(node->childPointers + node->size, sbl->childPointers, sizeof(off_t));
+				//sbl数据往前移动
+				memmove(sbl->pKey, sbl->pKey + KEYSIZE, KEYSIZE * (sbl->size - 1));
+				memmove(sbl->pValue, sbl->pValue + VALSIZE, VALSIZE * (sbl->size - 1));
+				if (!ISLEAF(sbl))
+					memmove(sbl->childPointers, sbl->childPointers + 1, sizeof(off_t) * sbl->size);
+				sbl->size -= 1;
+				WRITENODE(bt, parent);
+				WRITENODE(bt, node);
+				WRITENODE(bt, sbl);
+				ret = true;
+			}
+		}
 	}while(!SqStack().empty(stack_node));
 }
 
