@@ -173,7 +173,7 @@ static inline void traverse(BTree* bt, BForEachFuncT func)
 二分法查找pKey位于对比结点的位置
 todo这个破函数死循环了n次,目前看来已经正常了,但总觉得有更好的实现
 */
-static inline bool FINDCHILDLOCATION(BTree* bt, BNode* node, const void* pKey, BNodeST* loc)
+static inline bool FINDKEYEXPECTLOC(BTree* bt, BNode* node, const void* pKey, BNodeST* loc)
 {
 	BNodeST left = 0, right = node->size;
 	BNodeST last_mid = -100, mid;
@@ -230,7 +230,7 @@ static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, BNodeST*
 		//--end--
 		WRITENODE(bt, spl);
 		if (*pparent){//非根节点
-			FINDCHILDLOCATION(bt, *pparent, node->pKey, rrp);
+			FINDKEYEXPECTLOC(bt, *pparent, node->pKey, rrp);
 			if (*rrp < (*pparent)->size)//移动父结点自身数据
 				MOVE2SELF(bt, *pparent, *rrp);
 			//raise_I坐标数据上移父结点
@@ -293,7 +293,7 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
  			}
  		}
 		BNodeST loc;
-		if (!FINDCHILDLOCATION(bt, node, pKey, &loc)){
+		if (!FINDKEYEXPECTLOC(bt, node, pKey, &loc)){
 			memcpy(node->pValue + loc * VALSIZE, pValue, VALSIZE);
 			break;
 		}
@@ -318,29 +318,16 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 		RELEASEBNODE(&parent);
 }
 
-static void erase(BTree* bt, const void* pKey)
+static inline bool ERASE_FINDREPLACE(BTree* bt, const void* pKey, BNode* node, SqStack* stack_node, SqStack* stack_loc)
 {
-	if (!ROOTPOINTER)
-		return;
-	SqStack* stack_node = SqStack().create(sizeof(BNode*), NULL);
-	SqStack* stack_loc = SqStack().create(sizeof(BNodeST), NULL);
-	off_t pointer = ROOTPOINTER;
 	BNodeST loc;
-	BNode* node;//node为最终删除关键字所在的叶子结点,loc为删除位置,stack_node&stack_loc记录了路径信息
+	off_t pointer = ROOTPOINTER;
 	while(true){
 		node = NEWBNODE(bt);
 		READNODE(bt, pointer, node);
-		if (FINDCHILDLOCATION(bt, node, pKey, &loc)){
-			if (ISLEAF(node)){
-				RELEASEBNODE(&node);
-				while (!SqStack().empty(stack_node)){
-					BNode* vv = TOCONSTANT(BNode*, SqStack().pop(stack_node));
-					RELEASEBNODE(&vv);
-				}
-				SqStack().destroy(&stack_node);
-				SqStack().destroy(&stack_loc);
-				return;
-			}
+		if (FINDKEYEXPECTLOC(bt, node, pKey, &loc)){
+			if (ISLEAF(node))
+				return false;
 			SqStack().push(stack_node, &node);
 			SqStack().push(stack_loc, &loc);
 			pointer = node->childPointers[loc];
@@ -367,24 +354,40 @@ static void erase(BTree* bt, const void* pKey)
 				pointer = rplc->childPointers[rplc->size];
 			}while(true);
 		}
+		if (loc != node->size - 1){
+			BNodeST diff = node->size - 1 - loc;
+			memmove(node->pKey + loc * KEYSIZE, node->pKey + (loc + 1) * KEYSIZE, diff * KEYSIZE);
+			memmove(node->pValue + loc * VALSIZE, node->pValue + (loc + 1) * VALSIZE, diff * VALSIZE);
+		}
+		node->size -= 1;
+		return true;
+	}
+}
+
+static inline void ERASE_BALANCE(BTree* bt, BNode* node, SqStack* stack_node, SqStack* stack_loc)
+{
+	if (node->size >= bt->minNC)
 		break;
+	// BNode* parent = TOCONSTANT(BNode*, SqStack().get_top(stack_node));
+	// loc = TOCONSTANT(BNodeST, SqStack().get_top(stack_loc));
+
+}
+
+static void erase(BTree* bt, const void* pKey)
+{
+	if (!ROOTPOINTER)
+		return;
+	SqStack* stack_node = SqStack().create(sizeof(BNode*), NULL);
+	SqStack* stack_loc = SqStack().create(sizeof(BNodeST), NULL);
+	BNodeST loc;
+	BNode* node;//node为最终删除关键字所在的叶子结点,stack_node&stack_loc记录了路径信息
+	bool ret = ERASE_FINDREPLACE(bt, pKey, node, stack_node, stack_loc);
+	if (ret){
+		//平衡操作
+		ERASE_BALANCE(bt, node, stack_node, stack_loc);
+		WRITENODE(bt, node);
 	}
-	//删除操作
-	if (loc != node->size - 1){
-		BNodeST diff = node->size - 1 - loc;
-		memmove(node->pKey + loc * KEYSIZE, node->pKey + (loc + 1) * KEYSIZE, diff * KEYSIZE);
-		memmove(node->pValue + loc * VALSIZE, node->pValue + (loc + 1) * VALSIZE, diff * VALSIZE);
-	}
-	node->size -= 1;
-	//平衡操作
-	for (int i = 0; i < 1; i++){
-		if (node->size >= bt->minNC)
-			break;
-		BNode* parent = TOCONSTANT(BNode*, SqStack().get_top(stack_node));
-		loc = TOCONSTANT(BNodeST, SqStack().get_top(stack_loc));
-		
-	}
-	WRITENODE(bt, node);
+	//释放空间返回
 	RELEASEBNODE(&node);
 	while(!SqStack().empty(stack_node)){
 		BNode* vv = TOCONSTANT(BNode*, SqStack().pop(stack_node));
@@ -403,7 +406,7 @@ static const void* at(BTree* bt, const void* pKey)
 	do{
 		READNODE(bt, pointer, node);
 		BNodeST loc;
-		if (FINDCHILDLOCATION(bt, node, pKey, &loc)){
+		if (FINDKEYEXPECTLOC(bt, node, pKey, &loc)){
 			if (ISLEAF(node)){
 				RELEASEBNODE(&node);
 				return NULL;
