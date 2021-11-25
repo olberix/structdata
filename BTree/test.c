@@ -16,6 +16,7 @@ typedef struct TYVALUE{
 	int a;
 	double b;
 	char c[1024];
+	// char c;
 }TYVALUE;
 
 bool equalFunc(const void* lh, const void* rh)
@@ -47,7 +48,8 @@ int main(int argc, char const *argv[])
 	TYKEY key;
 	TYVALUE val;
 	memcpy(val.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
-	int range = 45;
+	// val.c = 'e';
+	int range = 420000;
 	for (int i = 0; i < range; i += 3){
 		key.a = i;
 		key.b = i + 0.5;
@@ -69,32 +71,30 @@ int main(int argc, char const *argv[])
 		val.b = val.a + 0.123;
 		BTree().insert(bt, &key, &val);
 	}
-	// puts("=======================================================");
-	// BTree().level_order_traverse(bt, foreach);
-	// puts("=======================================================");
+
+
 	for (int i = 0; i < range; i=i+2){
 		key.a = i;
 		key.b = key.a + 0.5;
 		BTree().erase(bt, &key);
+		printf("done-erase--2--%d\n", i);
 	}
-	// puts("=======================================================");
-	// BTree().level_order_traverse(bt, foreach);
-	// puts("=======================================================");
 
 	for (int i = 0; i < range; i=i+2){
-		// printf("done.%d---\n", i);
 		key.a = i;
 		key.b = key.a + 0.5;
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BTree().insert(bt, &key, &val);
+		printf("done-insert--2--%d\n", i);
 	}
-	// puts("333333333333333333");
+
 
 	// for (int i = 0; i < range; i=i+3){
 	// 	key.a = i;
 	// 	key.b = key.a + 0.5;
 	// 	BTree().erase(bt, &key);
+	// 	printf("done-erase--3--%d\n", i);
 	// }
 
 	// for (int i = 0; i < range; i=i+3){
@@ -103,6 +103,7 @@ int main(int argc, char const *argv[])
 	// 	val.a = 3 * i + 1;
 	// 	val.b = val.a + 0.123;
 	// 	BTree().insert(bt, &key, &val);
+	// 	printf("done-insert--3--%d\n", i);
 	// }
 
 	// for(int i = range - 1; i >= 0; i--){
@@ -118,9 +119,10 @@ int main(int argc, char const *argv[])
 	// puts("=======================================================");
 	// puts("=======================================================");
 	// BTree().level_order_traverse(bt, foreach);
-	// puts("=======================================================");
 
 
+
+	puts("=======================================================");
 	for(int i = 0; i < range; i += 1){
 		key.a = i;
 		key.b = key.a + 0.5;
@@ -146,9 +148,10 @@ int main(int argc, char const *argv[])
 	// 	key.b = key.a + 0.5;
 	// 	BTree().erase(bt, &key);
 	// }
-	// printf("%ld\n", lseek(bt->fd, 4096, SEEK_DATA));
 
 
+
+	printf("hole-------%ld\n", lseek(bt->fd, 4096, SEEK_HOLE));
 	// key.a = 1;
 	// key.b = 1.5;
 	// val.a = 4;

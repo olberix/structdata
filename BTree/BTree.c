@@ -214,22 +214,22 @@ static inline bool FINDKEYEXPECTLOC(BTree* bt, BNode* node, const void* pKey, BN
 /*结点某位置数据往后移动一格*/
 static inline void MOVEBACKONESTEP(BTree* bt, BNode* node, BNodeST loc, BNodeST child_loc)
 {
-	if (loc >= node->size)
-		return;
-	memmove(node->pKey + KEYSIZE * (loc + 1), node->pKey + KEYSIZE * loc, KEYSIZE * (node->size - loc));
-	memmove(node->pValue + VALSIZE * (loc + 1), node->pValue + VALSIZE * loc, VALSIZE * (node->size - loc));
-	if (!ISLEAF(node))
+	if (loc < node->size){
+		memmove(node->pKey + KEYSIZE * (loc + 1), node->pKey + KEYSIZE * loc, KEYSIZE * (node->size - loc));
+		memmove(node->pValue + VALSIZE * (loc + 1), node->pValue + VALSIZE * loc, VALSIZE * (node->size - loc));
+	}
+	if (!ISLEAF(node) && child_loc < node->size + 1)
 		memmove(node->childPointers + child_loc + 1, node->childPointers + child_loc, sizeof(off_t) * (node->size + 1 - child_loc));
 }
 
 /*结点某位置数据往前移动一格*/
 static inline void MOVEFORWARDONESTEP(BTree* bt, BNode* node, BNodeST loc, BNodeST child_loc)
 {
-	if (loc >= node->size || loc == 0)
-		return;
-	memmove(node->pKey + KEYSIZE * (loc - 1), node->pKey + KEYSIZE * loc, KEYSIZE * (node->size - loc));
-	memmove(node->pValue + VALSIZE * (loc - 1), node->pValue + VALSIZE * loc, VALSIZE * (node->size - loc));
-	if (!ISLEAF(node))
+	if (loc > 0 && loc < node->size){
+		memmove(node->pKey + KEYSIZE * (loc - 1), node->pKey + KEYSIZE * loc, KEYSIZE * (node->size - loc));
+		memmove(node->pValue + VALSIZE * (loc - 1), node->pValue + VALSIZE * loc, VALSIZE * (node->size - loc));
+	}
+	if (!ISLEAF(node) && child_loc > 0 && child_loc < node->size + 1)
 		memmove(node->childPointers + child_loc - 1, node->childPointers + child_loc, sizeof(off_t) * (node->size + 1 - child_loc));
 }
 
