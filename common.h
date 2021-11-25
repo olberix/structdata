@@ -20,11 +20,12 @@ enum StatusCode{
 	STATUS_FDERROR = 7,
 	STATUS_RDERROR = 8,
 	STATUS_WRERROR = 9,
+	STATUS_FALLOCATEERROR = 10,
 };
 
 static const char* errStr[] = {
 	"invalid index", "overflow", "no elem", "elem size error", "null function", "degree error", "file descriptor error",
-	"read error", "write error",
+	"read error", "write error", "fallocate error",
 };
 
 #define FREE(p) do{\
@@ -38,8 +39,9 @@ static const char* errStr[] = {
 	if (!(con)){\
 		if ((code) <= 6)\
 			fprintf(stderr, "%s\n", errStr[code]);\
-		else\
+		else{\
 			perror(errStr[code]);\
+		}\
 		void *array[20];\
 		size_t traceSize = backtrace(array, 20);\
 		char **strings = backtrace_symbols(array, traceSize);\
@@ -51,6 +53,7 @@ static const char* errStr[] = {
 			fprintf(stderr, "%s\n", "backtrace_symbols error");\
 		}\
 		FREE(strings);\
+		exit(-1);\
 	}\
 }while (0)
 #else

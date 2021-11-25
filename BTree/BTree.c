@@ -50,7 +50,7 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 		node->selfPointer = lseek(bt->fd, 0, SEEK_HOLE);
 	else
 		lseek(bt->fd, node->selfPointer, SEEK_SET);
-	CONDCHECK(node->selfPointer > 0 && node->selfPointer % PAGESIZE == 0, STATUS_OFFSETERROR);
+	CONDCHECK(node->selfPointer >= PAGESIZE && node->selfPointer % PAGESIZE == 0, STATUS_OFFSETERROR);
 	POINTCREATE_INIT(char*, tmpStr, char, PAGESIZE);
 	memcpy(tmpStr, &(node->size), sizeof(node->size));
 	BNodeST _size = sizeof(node->size);
@@ -84,7 +84,7 @@ static inline void RELEASEBNODE(BNode** nnode)
 
 static inline void FILERELEASE(BTree* bt, BNode* node)
 {
-	fallocate(bt->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, node->selfPointer, PAGESIZE);
+	CONDCHECK(fallocate(bt->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, node->selfPointer, PAGESIZE) >= 0, STATUS_FALLOCATEERROR);
 }
 
 static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc, BKeyCompareFuncT lessFunc, const char* fileName)
@@ -98,13 +98,11 @@ static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc,
 	if (flag == 0){//文件存在,代表已经创建
 		CONDCHECK(read(bt->fd, &(bt->head), sizeof(HeaderNode)) == sizeof(HeaderNode), STATUS_RDERROR);
 		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == getpagesize(), STATUS_SIZEERROR);
-		// CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == 160, STATUS_SIZEERROR);
 	}
 	else{
 		KEYSIZE = keySize;
 		VALSIZE = valSize;
 		PAGESIZE = getpagesize();
-		// PAGESIZE = 160;
 		WRITEHEADER(bt);
 	}
 	POINTCREATE(EMPTYDEF, bt->tmpRet, void, valSize);
