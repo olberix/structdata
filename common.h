@@ -24,8 +24,8 @@ enum StatusCode{
 };
 
 static const char* errStr[] = {
-	"invalid index", "overflow", "no elem", "elem size error", "null function", "degree error", "file descriptor error",
-	"read error", "write error", "fallocate error",
+	"invalid index", "overflow", "no elem", "elem size error", "null function", "degree error", "offset error",
+	"file descriptor error", "read error", "write error", "fallocate error",
 };
 
 #define FREE(p) do{\

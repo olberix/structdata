@@ -27,6 +27,7 @@ typedef struct BTree{
 	BKeyCompareFuncT equalFunc;
 	BKeyCompareFuncT lessFunc;
 	void* tmpRet;
+	off_t FILEHOLEBEGIN;
 	int fd;
 	unsigned short maxNC;
 	unsigned short minNC;

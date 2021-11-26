@@ -46,10 +46,15 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 {
 	if (node->size == 0)//等于0不再写,因为必然被fallocate
 		return;
-	if (!node->selfPointer)
+	if (!node->selfPointer){//todo 检测hole是否重复分配了;
+		// node->selfPointer = lseek(bt->fd, bt->FILEHOLEBEGIN - 1, SEEK_HOLE);
 		node->selfPointer = lseek(bt->fd, 0, SEEK_HOLE);
+		// node->selfPointer = lseek(bt->fd, 0, SEEK_END);
+		// bt->FILEHOLEBEGIN += PAGESIZE;
+	}
 	else
 		lseek(bt->fd, node->selfPointer, SEEK_SET);
+	// printf("%ld %ld-----\n", bt->FILEHOLEBEGIN, node->selfPointer);
 	CONDCHECK(node->selfPointer >= PAGESIZE && node->selfPointer % PAGESIZE == 0, STATUS_OFFSETERROR);
 	POINTCREATE_INIT(char*, tmpStr, char, PAGESIZE);
 	memcpy(tmpStr, &(node->size), sizeof(node->size));
@@ -63,6 +68,10 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 	}
 	CONDCHECK(write(bt->fd, tmpStr, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
 	FREE(tmpStr);
+	if (node->selfPointer == lseek(bt->fd, 0, SEEK_HOLE)){
+		printf("ssssssssss+++++++++");
+		exit(-1);
+	}
 }
 
 static inline BNode* NEWBNODE(BTree* bt)
@@ -85,6 +94,8 @@ static inline void RELEASEBNODE(BNode** nnode)
 static inline void FILERELEASE(BTree* bt, BNode* node)
 {
 	CONDCHECK(fallocate(bt->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, node->selfPointer, PAGESIZE) >= 0, STATUS_FALLOCATEERROR);
+	// if (node->selfPointer < bt->FILEHOLEBEGIN)
+	// 	bt->FILEHOLEBEGIN = node->selfPointer;
 }
 
 static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc, BKeyCompareFuncT lessFunc, const char* fileName)
@@ -106,6 +117,7 @@ static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc,
 		WRITEHEADER(bt);
 	}
 	POINTCREATE(EMPTYDEF, bt->tmpRet, void, valSize);
+	bt->FILEHOLEBEGIN = PAGESIZE;
 	bt->equalFunc = equalFunc;
 	bt->lessFunc = lessFunc;
 	bt->maxNC = (PAGESIZE - sizeof(off_t) - sizeof(size_t)) / (keySize + valSize + sizeof(off_t));

@@ -44,7 +44,7 @@ void foreach(const void* pKey, const void* pValue)
 
 int main(int argc, char const *argv[])
 {
-	BTree* bt = BTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "cc.DATA");
+	BTree* bt = BTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "../../cc.DATA");
 	TYKEY key;
 	TYVALUE val;
 	memcpy(val.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
@@ -72,21 +72,21 @@ int main(int argc, char const *argv[])
 		BTree().insert(bt, &key, &val);
 	}
 
-	// for (int i = 0; i < range; i=i+2){
-	// 	key.a = i;
-	// 	key.b = key.a + 0.5;
-	// 	BTree().erase(bt, &key);
-	// 	printf("done-erase--2--%d\n", i);
-	// }
+	for (int i = 0; i < range; i=i+2){
+		key.a = i;
+		key.b = key.a + 0.5;
+		BTree().erase(bt, &key);
+		printf("done-erase--2--%d\n", i);
+	}
 	
-	// for (int i = 0; i < range; i=i+2){
-	// 	key.a = i;
-	// 	key.b = key.a + 0.5;
-	// 	val.a = 3 * i + 1;
-	// 	val.b = val.a + 0.123;
-	// 	BTree().insert(bt, &key, &val);
-	// 	printf("done-insert--2--%d\n", i);
-	// }
+	for (int i = 0; i < range; i=i+2){
+		key.a = i;
+		key.b = key.a + 0.5;
+		val.a = 3 * i + 1;
+		val.b = val.a + 0.123;
+		BTree().insert(bt, &key, &val);
+		printf("done-insert--2--%d\n", i);
+	}
 
 	// for (int i = 0; i < range; i=i+3){
 	// 	key.a = i;
@@ -119,25 +119,25 @@ int main(int argc, char const *argv[])
 
 
 
-	// puts("=======================================================");
-	// for(int i = 0; i < range; i += 1){
-	// 	key.a = i;
-	// 	key.b = key.a + 0.5;
-	// 	const void* ret = BTree().at(bt, &key);
-	// 	if (ret){
-	// 		val = TOCONSTANT(TYVALUE, ret);
-	// 		if (!(val.a == key.a * 3 + 1 && val.b == val.a + 0.123)){
-	// 			puts("error---------");
-	// 			break;
-	// 		}
-	// 		if (i % 30000 == 0)
-	// 			puts("true---------");
-	// 	}
-	// 	else
-	// 	{
-	// 		PRINTF_INT(key.a);
-	// 	}
-	// }
+	puts("=======================================================");
+	for(int i = 0; i < range; i += 1){
+		key.a = i;
+		key.b = key.a + 0.5;
+		const void* ret = BTree().at(bt, &key);
+		if (ret){
+			val = TOCONSTANT(TYVALUE, ret);
+			if (!(val.a == key.a * 3 + 1 && val.b == val.a + 0.123)){
+				puts("error---------");
+				break;
+			}
+			if (i % 30000 == 0)
+				puts("true---------");
+		}
+		else
+		{
+			PRINTF_INT(key.a);
+		}
+	}
 
 
 	// for(int i = 0; i < range; i++){
