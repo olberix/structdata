@@ -13,6 +13,15 @@ extern int getpagesize();
 #define PAGESIZE (bt->head.pageSize)
 #define ROOTPOINTER (bt->head.rootPointer)
 
+static inline BNode* NEWBNODE(BTree* bt)
+{
+	POINTCREATE_INIT(BNode*, node, BNode, sizeof(BNode));
+	POINTCREATE_INIT(EMPTYDEF, node->childPointers, off_t, sizeof(off_t) * (bt->maxNC + 1));//childPointers清0,判断是否叶子结点
+	POINTCREATE(EMPTYDEF, node->pKey, void, KEYSIZE * bt->maxNC);
+	POINTCREATE(EMPTYDEF, node->pValue, void, VALSIZE * bt->maxNC);
+	return node;
+}
+
 static void WRITEHEADER(BTree* bt)
 {
 	POINTCREATE_INIT(char*, tmpStr, char, PAGESIZE);
@@ -42,19 +51,36 @@ static inline bool ISLEAF(BNode* node)
 	return node->childPointers[0] == 0;
 }
 
+static inline void RELEASEBNODE(BNode** nnode)
+{
+	FREE((*nnode)->pValue);
+	FREE((*nnode)->pKey);
+	FREE((*nnode)->childPointers);
+	FREE(*nnode);
+}
+
+/*
+*2021/11/29 11:18:40 终于搞定这困扰足足一周的bug了
+*bug:在设定val的size使每个结点只存储[1,3]个关键字,然后在对75w条数据的文件(约1.9G)操作时,删除后再插入会出现数据丢失的情况
+*这个数据丢失是偶现的,而且每次丢失的数据也不相同,因为这个随机性其实可以排除B树的删除和插入逻辑问题,因为这个B树的删除和插入实现
+ 不具有随机性,但我还是花了3.4天的时间调试这部分代码
+*后来才想到会不会是fallocate和SEEK_HOLE的配合问题(其实一开始也想到是不是他们的问题,但很快意识中排除了,因为开始写B树前已经对他们进行过
+ 不少测试,但都是小文件操作,这也直接导致了花费足足一周时间的悲剧)
+*导致原因:插入的时候,如果写入位置不是文件尾,而是中间的空洞开始位置A,在下一次的lseek(bt->fd, 0, SEEK_HOLE)的时候,偏移量依然可能会为A,
+ 这是因为内核文件缓存与磁盘可能不一致导致的,这也解释了发生bug的随机性
+*复现方式:注释掉WRITENODE函数最后两行,最后两行功能就是在空洞写入文件的时候同步一次内核与磁盘数据并等待返回,fsync会导致B树时间的急剧增加
+ (在zeroPoint的时候,用红黑树记录已分配过的空洞位置,这样就知道下一次lseek(bt->fd, 0, SEEK_HOLE)是否分配到了已经分配过的位置)
+*实现空洞写入数据更高效的方法应该是另外记录这个空洞位置,这样就不用每次同步磁盘了,下次B+树的实现打算采用这种方式
+*/
 static inline void WRITENODE(BTree* bt, BNode* node)
 {
 	if (node->size == 0)//等于0不再写,因为必然被fallocate
 		return;
-	if (!node->selfPointer){//todo 检测hole是否重复分配了;
-		// node->selfPointer = lseek(bt->fd, bt->FILEHOLEBEGIN - 1, SEEK_HOLE);
+	bool zeroPoint = node->selfPointer == 0;
+	if (zeroPoint)
 		node->selfPointer = lseek(bt->fd, 0, SEEK_HOLE);
-		// node->selfPointer = lseek(bt->fd, 0, SEEK_END);
-		// bt->FILEHOLEBEGIN += PAGESIZE;
-	}
 	else
 		lseek(bt->fd, node->selfPointer, SEEK_SET);
-	// printf("%ld %ld-----\n", bt->FILEHOLEBEGIN, node->selfPointer);
 	CONDCHECK(node->selfPointer >= PAGESIZE && node->selfPointer % PAGESIZE == 0, STATUS_OFFSETERROR);
 	POINTCREATE_INIT(char*, tmpStr, char, PAGESIZE);
 	memcpy(tmpStr, &(node->size), sizeof(node->size));
@@ -68,34 +94,13 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 	}
 	CONDCHECK(write(bt->fd, tmpStr, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
 	FREE(tmpStr);
-	if (node->selfPointer == lseek(bt->fd, 0, SEEK_HOLE)){
-		printf("ssssssssss+++++++++");
-		exit(-1);
-	}
-}
-
-static inline BNode* NEWBNODE(BTree* bt)
-{
-	POINTCREATE_INIT(BNode*, node, BNode, sizeof(BNode));
-	POINTCREATE_INIT(EMPTYDEF, node->childPointers, off_t, sizeof(off_t) * (bt->maxNC + 1));//childPointers清0,判断是否叶子结点
-	POINTCREATE(EMPTYDEF, node->pKey, void, KEYSIZE * bt->maxNC);
-	POINTCREATE(EMPTYDEF, node->pValue, void, VALSIZE * bt->maxNC);
-	return node;
-}
-
-static inline void RELEASEBNODE(BNode** nnode)
-{
-	FREE((*nnode)->pValue);
-	FREE((*nnode)->pKey);
-	FREE((*nnode)->childPointers);
-	FREE(*nnode);
+	if (zeroPoint && node->selfPointer != lseek(bt->fd, 0, SEEK_END))
+		fsync(bt->fd);
 }
 
 static inline void FILERELEASE(BTree* bt, BNode* node)
 {
 	CONDCHECK(fallocate(bt->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, node->selfPointer, PAGESIZE) >= 0, STATUS_FALLOCATEERROR);
-	// if (node->selfPointer < bt->FILEHOLEBEGIN)
-	// 	bt->FILEHOLEBEGIN = node->selfPointer;
 }
 
 static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc, BKeyCompareFuncT lessFunc, const char* fileName)
@@ -117,7 +122,6 @@ static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc,
 		WRITEHEADER(bt);
 	}
 	POINTCREATE(EMPTYDEF, bt->tmpRet, void, valSize);
-	bt->FILEHOLEBEGIN = PAGESIZE;
 	bt->equalFunc = equalFunc;
 	bt->lessFunc = lessFunc;
 	bt->maxNC = (PAGESIZE - sizeof(off_t) - sizeof(size_t)) / (keySize + valSize + sizeof(off_t));
@@ -185,10 +189,7 @@ static inline void traverse(BTree* bt, BForEachFuncT func)
 	__in_order_traverse(bt, ROOTPOINTER, func);
 }
 
-/*
-二分法查找pKey位于对比结点的位置
-todo这个破函数死循环了n次,目前看来已经正常了,但总觉得有更好的实现
-*/
+//二分法查找pKey位于对比结点的位置
 static inline bool FINDKEYEXPECTLOC(BTree* bt, BNode* node, const void* pKey, BNodeST* loc)
 {
 	BNodeST left = 0, right = node->size;

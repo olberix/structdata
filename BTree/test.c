@@ -41,6 +41,7 @@ void foreach(const void* pKey, const void* pValue)
 	const TYVALUE* value = pValue;
 	printf("KEY:a=%d b=%lf\tVALUE:a=%d b=%lf c=%s\n", key->a, key->b, value->a, value->b, value->c);
 }
+extern int cccc;
 
 int main(int argc, char const *argv[])
 {
@@ -50,6 +51,7 @@ int main(int argc, char const *argv[])
 	memcpy(val.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
 	// val.c = 'e';
 	const int range = 750000;
+	puts("111111-----**********");
 	for (int i = 0; i < range; i += 3){
 		key.a = i;
 		key.b = i + 0.5;
@@ -57,6 +59,7 @@ int main(int argc, char const *argv[])
 		val.b = val.a + 0.123;
 		BTree().insert(bt, &key, &val);
 	}
+	puts("222222-----**********");
 	for (int i = range - 1; i >= 0; i -= 3){
 		key.a = i;
 		key.b = i + 0.5;
@@ -64,6 +67,7 @@ int main(int argc, char const *argv[])
 		val.b = val.a + 0.123;
 		BTree().insert(bt, &key, &val);
 	}
+	puts("333333-----**********");
 	for (int i = range - 2; i >= 0; i -= 3){
 		key.a = i;
 		key.b = i + 0.5;
@@ -72,36 +76,45 @@ int main(int argc, char const *argv[])
 		BTree().insert(bt, &key, &val);
 	}
 
+	puts("444444-----**********");
 	for (int i = 0; i < range; i=i+2){
 		key.a = i;
 		key.b = key.a + 0.5;
 		BTree().erase(bt, &key);
-		printf("done-erase--2--%d\n", i);
+		// printf("done-erase--2--%d\n", i);
 	}
-	
+	puts("555555-----**********");
 	for (int i = 0; i < range; i=i+2){
 		key.a = i;
 		key.b = key.a + 0.5;
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BTree().insert(bt, &key, &val);
-		printf("done-insert--2--%d\n", i);
+		// printf("done-insert--2--%d\n", i);
 	}
 
-	// for (int i = 0; i < range; i=i+3){
-	// 	key.a = i;
-	// 	key.b = key.a + 0.5;
-	// 	BTree().erase(bt, &key);
-	// 	printf("done-erase--3--%d\n", i);
-	// }
-	// for (int i = 0; i < range; i=i+3){
-	// 	key.a = i;
-	// 	key.b = i + 0.5;
-	// 	val.a = 3 * i + 1;
-	// 	val.b = val.a + 0.123;
-	// 	BTree().insert(bt, &key, &val);
-	// 	printf("done-insert--3--%d\n", i);
-	// }
+	for (int i = 0; i < range / 2; i=i+3){
+		key.a = i;
+		key.b = key.a + 0.5;
+		BTree().erase(bt, &key);
+		printf("done-erase--3--%d\n", i);
+	}
+
+	for (int i = range - 3; i >= range / 2; i=i-3){
+		key.a = i;
+		key.b = key.a + 0.5;
+		BTree().erase(bt, &key);
+		printf("done-erase--3--%d\n", i);
+	}
+
+	for (int i = 0; i < range; i=i+3){
+		key.a = i;
+		key.b = i + 0.5;
+		val.a = 3 * i + 1;
+		val.b = val.a + 0.123;
+		BTree().insert(bt, &key, &val);
+		printf("done-insert--3--%d\n", i);
+	}
 
 	// for(int i = range - 1; i >= 0; i--){
 	// 	key.a = i;
@@ -140,50 +153,7 @@ int main(int argc, char const *argv[])
 	}
 
 
-	// for(int i = 0; i < range; i++){
-	// 	key.a = i;
-	// 	key.b = key.a + 0.5;
-	// 	const void* ret = BTree().at(bt, &key);
-	// 	if (!ret){
-	// 		if (i % 2 != 0)
-	// 			puts("false-------11111");
-	// 		// else
-	// 		// 	printf("?????????%d\n", i);
-	// 	}
-	// 	else{
-	// 		printf("%d----------\n", i);
-	// 		if (i % 2 == 0){
-	// 			puts("false-------2222222");
-	// 		}
-	// 		else{
-	// 			val = TOCONSTANT(TYVALUE, ret);
-	// 			if (!(val.a == key.a * 3 + 1 && val.b == val.a + 0.123)){
-	// 				puts("error---------");
-	// 				// break;
-	// 			}
-	// 			// if (i % 30001 == 0)
-	// 			// 	puts("true---------");
-	// 		}
-	// 	}
-	// }
-
-
-	// for (int i = 0; i < range; i++){
-	// 	key.a = i;
-	// 	key.b = key.a + 0.5;
-	// 	BTree().erase(bt, &key);
-	// }
-
-
-
 	printf("hole-------%ld\n", lseek(bt->fd, 4096, SEEK_HOLE));
-	// key.a = 1;
-	// key.b = 1.5;
-	// val.a = 4;
-	// val.b=4.123;
-	// val.c='e';
-	// BTree().erase(bt, &key);
-	// BTree().insert(bt, &key, &val);
 	BTree().destroy(&bt);
 	return 0;
 }

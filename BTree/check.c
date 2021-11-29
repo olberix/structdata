@@ -9,8 +9,8 @@
 
 int main(int argc, char const *argv[])
 {
-	int fd1 = open("cc.DATA", O_RDWR | O_CREAT, 777);
-	// int fd2 = open("../../111.DATA", O_RDWR | O_CREAT, 777);
+	int fd1 = open("222.DATA", O_RDWR | O_CREAT, 777);
+	// int fd2 = open("111.DATA", O_RDWR | O_CREAT, 777);
 	// char str1[4097];
 	// char str2[4097];
 	// long long aa = 0;
@@ -35,6 +35,8 @@ int main(int argc, char const *argv[])
 	// 	if (aa % 10000 == 0)
 	// 		printf("%d 4k-----------\n", aa);
 	// }while(true);
+
+
 	off_t hole;
 	off_t data = 0;
 	off_t end = lseek(fd1, 0, SEEK_END);
