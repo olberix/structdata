@@ -116,7 +116,9 @@ RBTree引理：一棵有N个结点的红黑树高度h<=2log(2,N+1)，证明：
 1. 将RBTree合并为2-3-4树(红色结点向黑色父结点合并)，令合并前高度为h，合并后高度为h'，则h<=2h'，当某分支红黑结点各一半时等号成立
 2. 合并后可得N>=2^h'-1，故h'<=log(2,N+1)，当不存在红色结点时等号成立 (其实这一步可以省略理解，因为带有N个结点的二叉树，必然有N+1个空指针(不算父指针)，RBTree合并为2-3-4树后，每条分支等高，直接得出h'<=log(2,N+1))
 3. 因为h<=2h'，故h<=2log(2,N+1)，所以RBTree的查找复杂度为log(2, N)
-  
+
+RBTree插入新结点步骤：  
+![insert](https://github.com/ccencon/structdata/blob/main/images/rbtree_insert.png)
 
 ## <span id="7">B-Tree</span>
 ## <span id="8">B+Tree</span>
