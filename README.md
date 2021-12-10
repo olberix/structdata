@@ -80,7 +80,7 @@ ThrtAVLTree是带有中序threaded的平衡二叉树实现，AVLNode中新增线
 
 关于AVLTree与RBTree的对比，RBTree好像并不能完全替代AVLTree，对于插入，它们的效率对比其实有点依赖输入数据，对于一组顺序的数据来说，RBTree必然优于AVLTree，因为此时AVLTree总是进行单支插入，但如果数据随机，AVLTree发生旋转的概率会大大减少，而RBTree可能需要继续进行着色操作，甚至会因为维护自身特性进行必要的旋转；不过对于删除，因为RBTree自身的特性，大部分情况下应该都优于AVLTree。总而言之，对于查询和随机插入较多的环境，AVLTree优于RBTree，对于顺序插入和删除较多又或者比较综合的环境，RBTree优于AVLTree
 
-$\color{rgb(0,248,0)} {参考链接：}$&nbsp;[AVL树基础篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&amp;mid=2647521381&amp;idx=1&amp;sn=796ac1eda0eaefadfb57a1b9742bcec0&amp;chksm=87d24766b0a5ce70a18acca20a130a14c16fb56a716d1c0e1fbe0acf23915a1b8aaf509f3850&scene=178&cur_album_id=1338152221988585473#rd)&nbsp;&nbsp;[AVL树删除篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&amp;mid=2647521508&amp;idx=1&amp;sn=ff0751a1a49a48450757b53978fcbef8&amp;chksm=87d247e7b0a5cef1f5f581cfa843b68021a51e979ee49b2b947cf394c613b4701ac07a8e8a76&scene=178&cur_album_id=1338152221988585473#rd)
+[参考链接：]()&nbsp;[AVL树基础篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&amp;mid=2647521381&amp;idx=1&amp;sn=796ac1eda0eaefadfb57a1b9742bcec0&amp;chksm=87d24766b0a5ce70a18acca20a130a14c16fb56a716d1c0e1fbe0acf23915a1b8aaf509f3850&scene=178&cur_album_id=1338152221988585473#rd)&nbsp;&nbsp;[AVL树删除篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&amp;mid=2647521508&amp;idx=1&amp;sn=ff0751a1a49a48450757b53978fcbef8&amp;chksm=87d247e7b0a5cef1f5f581cfa843b68021a51e979ee49b2b947cf394c613b4701ac07a8e8a76&scene=178&cur_album_id=1338152221988585473#rd)
 ## <span id="6">RBTree</span>
 ## <span id="7">B-Tree</span>
 ## <span id="8">B+Tree</span>
