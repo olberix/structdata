@@ -76,11 +76,47 @@ typedef struct AVLTree{
 
 AVLTree是严格平衡的二叉排序树，因为平衡因子的绝对值不会超过1，所以叶子结点只会出现在层数最大的两层，可以发现，当数据达到一定量的时候，层数越大的数据离散程度就越小，下几次的插入或删除操作所发生旋转的概率就会变低，或者旋转的次数变少；值得注意的是，[**AVLTree的插入删除操作均不需暴力回退到根节点**]()，插入时，若回溯中结点的高度不变，则停止回溯，因为是插入操作，结点高度不变，证明以此结点为根的子树已经平衡，高度不变故而后面的结点也就没有了回溯的必要；而删除时，若回溯结点高度不变**且**平衡因子绝对值不超过1时停止回溯，因为此时以此结点为根的子树已然平衡，加之高度不变便停止回溯  
 
-ThrtAVLTree是带有中序threaded的平衡二叉树实现，AVLNode中新增线索标志ThrtFlag用于判断结点的左右指向是孩子结点还是前驱后继结点；线索是对结点空指针的合理利用，以二叉链表实现的二叉树为例，必有空指针数=2n-(n-1)=n+1个，这些空指针用于指向前驱或者后继结点形成线索；不过线索这个概念除了可以加深理解之外好像实际用处并不大，如果是用于遍历，以栈遍历为例，栈和线索遍历时间复杂度都是O(n)，唯一比栈遍历好的就是空间复杂度达到常数级别O(1)，但是对于可以运行树结构的机器来说，O(1)和O(log(2, N))的空间复杂度没啥区别，如果是用于查找前驱和后继结点，能利用上线索的也只有叶子结点或者单孩子结点，优势也不明显；加上线索比较局限，一次只能建立一种次序线索，插入和删除结点时，也同样需要进行维护，不过为了加深认知，还是在AVLTree中加入了线索实现。  
+ThrtAVLTree是带有中序threaded的平衡二叉树实现，AVLNode中新增线索标志ThrtFlag用于判断结点的左右指向是孩子结点还是前驱后继结点；线索是对结点空指针的合理利用，以二叉链表实现的二叉树为例，必有空指针数=2n-(n-1)=n+1个，这些空指针用于指向前驱或者后继结点形成线索；不过线索这个概念除了可以加深理解之外好像实际用处并不大，如果是用于遍历，以栈遍历为例，栈和线索遍历时间复杂度都是O(n)，唯一比栈遍历好的就是空间复杂度达到常数级别O(1)，但是对于可以运行树结构的机器来说，O(1)和O(log(2, N))的空间复杂度没啥区别，如果是用于查找前驱和后继结点，能利用上线索的也只有叶子结点或者单孩子结点，优势也不明显；加上线索比较局限，一次只能建立一种次序线索，插入和删除结点时，也同样需要进行维护，不过为了加深认知，还是在AVLTree中加入了线索实现  
 
 关于AVLTree与RBTree的对比，RBTree好像并不能完全替代AVLTree，对于插入，它们的效率对比其实有点依赖输入数据，对于一组顺序的数据来说，RBTree必然优于AVLTree，因为此时AVLTree总是进行单支插入，但如果数据随机，AVLTree发生旋转的概率会大大减少，而RBTree可能需要继续进行着色操作，甚至会因为维护自身特性进行必要的旋转；不过对于删除，因为RBTree自身的特性，大部分情况下应该都优于AVLTree。总而言之，对于查询和随机插入较多的环境，AVLTree优于RBTree，对于顺序插入和删除较多又或者比较综合的环境，RBTree优于AVLTree
 
 [**参考链接：**]()&nbsp;[AVL树基础篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&amp;mid=2647521381&amp;idx=1&amp;sn=796ac1eda0eaefadfb57a1b9742bcec0&amp;chksm=87d24766b0a5ce70a18acca20a130a14c16fb56a716d1c0e1fbe0acf23915a1b8aaf509f3850&scene=178&cur_album_id=1338152221988585473#rd)&nbsp;&nbsp;[AVL树删除篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&amp;mid=2647521508&amp;idx=1&amp;sn=ff0751a1a49a48450757b53978fcbef8&amp;chksm=87d247e7b0a5cef1f5f581cfa843b68021a51e979ee49b2b947cf394c613b4701ac07a8e8a76&scene=178&cur_album_id=1338152221988585473#rd)
 ## <span id="6">RBTree</span>
+```c
+static const unsigned char RB_RED = 0x0;
+static const unsigned char RB_BLACK = 0x1;
+typedef struct RBNode{
+	void* pKey;
+	void* pValue;
+	struct RBNode* lchild;
+	struct RBNode* rchild;
+	struct RBNode* parent;
+	unsigned char color;
+}RBNode;
+typedef bool(*RBKeyCompareFuncT)(const void*, const void*);
+typedef void(*RBForEachFuncT)(const void*, void*);
+typedef struct RBTree{
+	RBNode* root;
+	RBKeyCompareFuncT equalFunc;
+	RBKeyCompareFuncT lessFunc;
+	size_t keySize;
+	size_t valSize;
+}RBTree;
+```
+红黑树(Red Black Tree)是一棵自平衡的二叉排序树，它具有以下特点：  
+
++	根结点恒为黑色，非根结点为黑色或者红色
++	红色结点不能路径上相邻
++	以任意结点为根的子树，所有路径都包含了数量相等的黑色结点
+  
+与AVLTree的实现类似，RBTree创建时同样需要传入自定义比较函数和键值大小，RBNode新增父指针parent和颜色标志color，因为插入总是以红色结点插入，所以将红色的标志值定义为0，使结点清零初始化便为红色结点；RBTree的起源是从4阶B树得到启发，要彻底理解RBTree最好先熟悉 [B-Tree](#7)  
+
+RBTree引理：一棵有N个结点的红黑树高度h<=2log(2,N+1)，证明：  
+
+1. 将RBTree合并为2-3-4树(红色结点向黑色父结点合并)，令合并前高度为h，合并后高度为h'，则h<=2h'，当某分支红黑结点各一半时等号成立
+2. 合并后可得N>=2^h'-1，故h'<=log(2,N+1)，当不存在红色结点时等号成立 (其实这一步可以省略理解，因为带有N个结点的二叉树，必然有N+1个空指针(不算父指针)，RBTree合并为2-3-4树后，每条分支等高，直接得出h'<=log(2,N+1))
+3. 因为h<=2h'，故h<=2log(2,N+1)，所以RBTree的查找复杂度为log(2, N)
+  
+
 ## <span id="7">B-Tree</span>
 ## <span id="8">B+Tree</span>
