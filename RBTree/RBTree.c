@@ -248,12 +248,7 @@ static inline void do_balance_erase(RBTree* tree, RBNode* rlc)
 		C->color = RB_BLACK;
 		return;
 	}
-	//黑色结点(根节点)-无孩子
-	if (!P){
-		reset_parent_point(tree, NULL, NULL, NULL);
-		return;
-	}
-	//黑色结点(非根节点)-无孩子
+	//黑色结点-无孩子
 	RBNode* pivot = rlc;
 	while(true){
 		if (!P)//根节点,黑高减一
