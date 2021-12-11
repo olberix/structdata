@@ -119,6 +119,7 @@ RBTree引理：一棵有N个结点的红黑树高度h<=2log(2,N+1)，证明：
 
 RBTree插入新结点步骤：  
 ![insert](https://github.com/ccencon/structdata/blob/main/images/rbtree_insert.png)
+![erase](https://github.com/ccencon/structdata/blob/main/images/rbtree_erase.png)
 
 ## <span id="7">B-Tree</span>
 ## <span id="8">B+Tree</span>
