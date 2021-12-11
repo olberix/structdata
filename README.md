@@ -80,7 +80,7 @@ ThrtAVLTree是带有中序threaded的平衡二叉树实现，AVLNode中新增线
 
 关于AVLTree与RBTree的对比，RBTree好像并不是绝对比AVLTree高效，对于插入，它们的效率对比其实有点依赖输入数据，对于一组顺序的数据来说，RBTree必然优于AVLTree，因为此时AVLTree总是进行单支插入，但如果数据随机，AVLTree发生旋转的概率会大大减少，而RBTree可能需要继续进行着色操作，甚至会因为维护自身特性进行必要的旋转；对于删除，虽然RBTree最多仅需3次旋转，但仍然可能需要进行着色，加之AVLTree也不是总是需要回溯到根结点，所以也不见得一定比AVLTree快。总而言之，对于查询和随机插入较多的环境，AVLTree优于RBTree，对于顺序插入又或者比较综合的环境，RBTree一定优于AVLTree?
 
-[**参考链接：**]()&nbsp;[AVL树基础篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&amp;mid=2647521381&amp;idx=1&amp;sn=796ac1eda0eaefadfb57a1b9742bcec0&amp;chksm=87d24766b0a5ce70a18acca20a130a14c16fb56a716d1c0e1fbe0acf23915a1b8aaf509f3850&scene=178&cur_album_id=1338152221988585473#rd)&nbsp;&nbsp;[AVL树删除篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&amp;mid=2647521508&amp;idx=1&amp;sn=ff0751a1a49a48450757b53978fcbef8&amp;chksm=87d247e7b0a5cef1f5f581cfa843b68021a51e979ee49b2b947cf394c613b4701ac07a8e8a76&scene=178&cur_album_id=1338152221988585473#rd)
+[**参考链接：**]()&nbsp;[AVL树基础篇](https://mp.weixin.qq.com/s/POX8QV9JFrRcAi-q-sJvOA)&nbsp;&nbsp;[AVL树删除篇](https://mp.weixin.qq.com/s/9no2Ge0hWo1lZHRm_JS0hA)
 ## <span id="6">RBTree</span>
 ```c
 static const unsigned char RB_RED = 0x0;
@@ -120,6 +120,6 @@ RBTree引理：一棵有N个结点的红黑树高度h<=2log(2,N+1)，证明：
 RBTree插入和删除步骤：  
 ![insert](https://github.com/ccencon/structdata/blob/main/images/rbtree_insert.png)
 ![erase](https://github.com/ccencon/structdata/blob/main/images/rbtree_erase.png)  
-[**参考链接：**]()&nbsp;[红黑树上篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&mid=2647521575&idx=1&sn=844d6bcdf8cdce683d7d837d4933c788&chksm=87d24624b0a5cf32a119334268184987b6f254de7edfd35ae19c88999789ff70e24a5881bf68&scene=178&cur_album_id=1338152221988585473#rd)&nbsp;&nbsp;[红黑树中篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&mid=2647521642&idx=1&sn=dda12824118e46c17374333062e37a6a&chksm=87d24669b0a5cf7f5bf8e2614deb224d15c10cd474d24c17e9354743b7a5eb72fc89469e6330&scene=178&cur_album_id=1338152221988585473#rd)&nbsp;&nbsp;[红黑树下篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&mid=2647521911&idx=1&sn=2e0a8b636cff515c5471f9a1bb2c3022&chksm=87d24574b0a5cc62e19d1f78b429a78b855948c5a3c7a98f7aca8372a674d17419c47f34a6c8&scene=178&cur_album_id=1338152221988585473#rd)&nbsp;&nbsp;[通过2-3-4树理解红黑树](https://zhuanlan.zhihu.com/p/269069974)
+[**参考链接：**]()&nbsp;[红黑树上篇](https://mp.weixin.qq.com/s/DXh93cQaKRgsKccmoQOAjQ)&nbsp;&nbsp;[红黑树中篇](https://mp.weixin.qq.com/s/tnbbvgPyqz0pEpA76rn_1g)&nbsp;&nbsp;[红黑树下篇](https://mp.weixin.qq.com/s/oAyiRC_O-N5CHqAjt2va9w)&nbsp;&nbsp;[通过2-3-4树理解红黑树](https://zhuanlan.zhihu.com/p/269069974)
 ## <span id="7">B-Tree</span>
 ## <span id="8">B+Tree</span>
