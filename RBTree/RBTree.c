@@ -290,7 +290,7 @@ static inline void do_balance_erase(RBTree* tree, RBNode* rlc)
 				pivot = P;//P为黑色,递归判断
 				P = P->parent;
 			}
-			//S为红色,递归判断
+			//S为红色,递归判断(转化为S为黑色的情况)
 			else{
 				right_rotation(tree, P);
 				P->color ^= 0x1;
@@ -329,7 +329,7 @@ static inline void do_balance_erase(RBTree* tree, RBNode* rlc)
 				pivot = P;//P为黑色,递归判断
 				P = P->parent;
 			}
-			//S为红色,递归判断
+			//S为红色,递归判断(转化为S为黑色的情况)
 			else{
 				left_rotation(tree, P);
 				P->color ^= 0x1;
