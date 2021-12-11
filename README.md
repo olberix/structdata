@@ -120,5 +120,6 @@ RBTree引理：一棵有N个结点的红黑树高度h<=2log(2,N+1)，证明：
 RBTree插入和删除步骤：  
 ![insert](https://github.com/ccencon/structdata/blob/main/images/rbtree_insert.png)
 ![erase](https://github.com/ccencon/structdata/blob/main/images/rbtree_erase.png)  
+[**参考链接：**]()&nbsp;[红黑树上篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&mid=2647521575&idx=1&sn=844d6bcdf8cdce683d7d837d4933c788&chksm=87d24624b0a5cf32a119334268184987b6f254de7edfd35ae19c88999789ff70e24a5881bf68&scene=178&cur_album_id=1338152221988585473#rd)&nbsp;&nbsp;[红黑树中篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&mid=2647521642&idx=1&sn=dda12824118e46c17374333062e37a6a&chksm=87d24669b0a5cf7f5bf8e2614deb224d15c10cd474d24c17e9354743b7a5eb72fc89469e6330&scene=178&cur_album_id=1338152221988585473#rd)&nbsp;&nbsp;[红黑树下篇](https://mp.weixin.qq.com/s?__biz=MzA4NDE4MzY2MA==&mid=2647521911&idx=1&sn=2e0a8b636cff515c5471f9a1bb2c3022&chksm=87d24574b0a5cc62e19d1f78b429a78b855948c5a3c7a98f7aca8372a674d17419c47f34a6c8&scene=178&cur_album_id=1338152221988585473#rd)&nbsp;&nbsp;[通过2-3-4树理解红黑树](https://zhuanlan.zhihu.com/p/269069974)
 ## <span id="7">B-Tree</span>
 ## <span id="8">B+Tree</span>
