@@ -61,7 +61,7 @@ static inline void RELEASEBNODE(BNode** nnode)
 
 /*
 *2021/11/29 11:18:40 终于搞定这困扰足足一周的bug了
-*bug:在设定val的size使每个结点只存储[1,3]个关键字,然后在对75w条数据的文件(约1.9G)操作时,删除后再插入会出现数据丢失的情况
+*bug:在设定val的size使每个结点只存储[1,3]个关键字,然后在对75w条数据的文件(约1.5G-1.9G)操作时,删除后再插入会出现数据丢失的情况
 *这个数据丢失是偶现的,而且每次丢失的数据也不相同,因为这个随机性其实可以排除B树的删除和插入逻辑问题,因为这个B树的删除和插入实现
  不具有随机性,但我还是花了3.4天的时间调试这部分代码
 *后来才想到会不会是fallocate和SEEK_HOLE的配合问题(其实一开始也想到是不是他们的问题,但很快意识中排除了,因为开始写B树前已经对他们进行过
@@ -94,7 +94,7 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 	}
 	CONDCHECK(write(bt->fd, tmpStr, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
 	FREE(tmpStr);
-	if (zeroPoint && node->selfPointer != lseek(bt->fd, 0, SEEK_END))
+	if (zeroPoint && node->selfPointer + PAGESIZE != lseek(bt->fd, 0, SEEK_END))
 		fsync(bt->fd);
 }
 
