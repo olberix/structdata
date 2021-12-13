@@ -61,26 +61,28 @@ static inline void RELEASEBNODE(BNode** nnode)
 
 /*
 *2021/11/29 11:18:40 终于搞定这困扰足足一周的bug了
-*bug:在设定val的size使每个结点只存储[1,3]个关键字,然后在对75w条数据的文件(约1.5G-1.9G)操作时,删除后再插入会出现数据丢失的情况
+*bug:在设定val的size使每个结点只存储[1,3]个关键字,然后在对75w条数据的文件操作时,删除后再插入会出现数据丢失的情况
 *这个数据丢失是偶现的,而且每次丢失的数据也不相同,因为这个随机性其实可以排除B树的删除和插入逻辑问题,因为这个B树的删除和插入实现
  不具有随机性,但我还是花了3.4天的时间调试这部分代码
 *后来才想到会不会是fallocate和SEEK_HOLE的配合问题(其实一开始也想到是不是他们的问题,但很快意识中排除了,因为开始写B树前已经对他们进行过
  不少测试,但都是小文件操作,这也直接导致了花费足足一周时间的悲剧)
-*导致原因:插入的时候,如果写入位置不是文件尾,而是中间的空洞开始位置A,在下一次的lseek(bt->fd, 0, SEEK_HOLE)的时候,偏移量依然可能会为A,
- 这是因为内核文件缓存与磁盘可能不一致导致的,这也解释了发生bug的随机性
-*复现方式:注释掉WRITENODE函数最后两行,最后两行功能就是在空洞写入文件的时候同步一次内核与磁盘数据并等待返回,fsync会导致B树时间的急剧增加
- (在zeroPoint的时候,用红黑树记录已分配过的空洞位置,这样就知道下一次lseek(bt->fd, 0, SEEK_HOLE)是否分配到了已经分配过的位置)
+*导致原因:插入的时候,如果写入位置为新分配的位置A(空洞或者文件尾),在下一次的lseek(bt->fd, 0, SEEK_HOLE)的时候,偏移量依然可能会为A,
+ 这应该是内核文件缓存与磁盘可能不一致导致的?SEEK_HOLE以磁盘块为偏移,所以lseek(bt->fd, 0, SEEK_HOLE)的实现是读取inode中的block数组?这可以解释发生bug的随机性
+*复现方式:注释掉WRITENODE函数最后两行,最后两行功能就是在新位置写入文件的时候同步一次内核与磁盘数据并等待返回,fdatasync会导致B树时间的急剧增加
+ (在新分配位置时,用红黑树记录已分配过的位置,这样就知道下一次lseek(bt->fd, 0, SEEK_HOLE)是否分配到了已经分配过的位置)
 *实现空洞写入数据更高效的方法应该是另外记录这个空洞位置,这样就不用每次同步磁盘了,下次B+树的实现打算采用这种方式
 */
 static inline void WRITENODE(BTree* bt, BNode* node)
 {
 	if (node->size == 0)//等于0不再写,因为必然被fallocate
 		return;
-	bool zeroPoint = node->selfPointer == 0;
-	if (zeroPoint)
-		node->selfPointer = lseek(bt->fd, 0, SEEK_HOLE);
-	else
+	bool sync = false;
+	if (node->selfPointer)
 		lseek(bt->fd, node->selfPointer, SEEK_SET);
+	else{
+		node->selfPointer = lseek(bt->fd, 0, SEEK_HOLE);
+		sync = true;
+	}
 	CONDCHECK(node->selfPointer >= PAGESIZE && node->selfPointer % PAGESIZE == 0, STATUS_OFFSETERROR);
 	POINTCREATE_INIT(char*, tmpStr, char, PAGESIZE);
 	memcpy(tmpStr, &(node->size), sizeof(node->size));
@@ -94,8 +96,8 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 	}
 	CONDCHECK(write(bt->fd, tmpStr, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
 	FREE(tmpStr);
-	if (zeroPoint && node->selfPointer + PAGESIZE != lseek(bt->fd, 0, SEEK_END))
-		fsync(bt->fd);
+	if (sync)
+		fdatasync(bt->fd);
 }
 
 static inline void FILERELEASE(BTree* bt, BNode* node)

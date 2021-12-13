@@ -58,6 +58,7 @@ int main(int argc, char const *argv[])
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BTree().insert(bt, &key, &val);
+		printf("11111----insert-%d\n", i);
 	}
 	puts("222222-----**********");
 	for (int i = range - 1; i >= 0; i -= 3){
@@ -66,6 +67,7 @@ int main(int argc, char const *argv[])
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BTree().insert(bt, &key, &val);
+		printf("22222----insert-%d\n", i);
 	}
 	puts("333333-----**********");
 	for (int i = range - 2; i >= 0; i -= 3){
@@ -74,6 +76,7 @@ int main(int argc, char const *argv[])
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BTree().insert(bt, &key, &val);
+		printf("33333----insert-%d\n", i);
 	}
 
 	puts("444444-----**********");
@@ -81,7 +84,7 @@ int main(int argc, char const *argv[])
 		key.a = i;
 		key.b = key.a + 0.5;
 		BTree().erase(bt, &key);
-		// printf("done-erase--2--%d\n", i);
+		printf("done-erase--2--%d\n", i);
 	}
 	puts("555555-----**********");
 	for (int i = 0; i < range; i=i+2){
@@ -90,7 +93,7 @@ int main(int argc, char const *argv[])
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BTree().insert(bt, &key, &val);
-		// printf("done-insert--2--%d\n", i);
+		printf("done-insert--2--%d\n", i);
 	}
 
 	for (int i = 0; i < range / 2; i=i+3){
