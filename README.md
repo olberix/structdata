@@ -111,15 +111,77 @@ typedef struct RBTree{
   
 与AVLTree的实现类似，RBTree创建时同样需要传入自定义比较函数和键值大小，RBNode新增父指针parent和颜色标志color，因为插入总是以红色结点插入，所以将红色的标志值定义为0，使结点清零初始化便为红色结点，同时将黑色标志值定义为1，交换颜色的时候异或取反便可；RBTree的起源是从4阶B树得到启发，要彻底理解RBTree最好先熟悉 [B-Tree](#7)  
 
-RBTree引理：一棵有N个结点的红黑树高度h<=2log(2,N+1)，证明：  
+RBTree引理：一棵有N个结点的红黑树高度h<=2log(2, N+1)，证明：  
 
 1. 将RBTree合并为2-3-4树(红色结点向黑色父结点合并)，令合并前高度为h，合并后高度为h'，则h<=2h'，当某分支红黑结点各一半时等号成立
-2. 合并后可得N>=2^h'-1，故h'<=log(2,N+1)，当不存在红色结点时等号成立 (其实这一步可以省略理解，因为带有N个结点的二叉树，必然有N+1个空指针(不算父指针)，RBTree合并为2-3-4树后，每条分支等高，直接得出h'<=log(2,N+1))
-3. 因为h<=2h'，故h<=2log(2,N+1)，所以RBTree的查找复杂度为log(2, N)
+2. 合并后可得N>=2^h'-1，故h'<=log(2, N+1)，当不存在红色结点时等号成立 (其实这一步可以省略理解，因为带有N个结点的二叉树，必然有N+1个空指针(不算父指针)，RBTree合并为2-3-4树后，每条分支等高，直接得出h'<=log(2, N+1))
+3. 因为h<=2h'，故h<=2log(2, N+1)，所以RBTree的查找复杂度为log(2, N)
 
 RBTree插入和删除步骤：  
-![insert](https://github.com/ccencon/structdata/blob/main/images/rbtree_insert.png)
-![erase](https://github.com/ccencon/structdata/blob/main/images/rbtree_erase.png)  
+<span id="6-1">![insert](https://github.com/ccencon/structdata/blob/main/images/rbtree_insert.png)</span>  
+<span id="6-2">![erase](https://github.com/ccencon/structdata/blob/main/images/rbtree_erase.png)</span>  
 [**参考链接：**]()&nbsp;[红黑树上篇](https://mp.weixin.qq.com/s/DXh93cQaKRgsKccmoQOAjQ)&nbsp;&nbsp;[红黑树中篇](https://mp.weixin.qq.com/s/tnbbvgPyqz0pEpA76rn_1g)&nbsp;&nbsp;[红黑树下篇](https://mp.weixin.qq.com/s/oAyiRC_O-N5CHqAjt2va9w)&nbsp;&nbsp;[通过2-3-4树理解红黑树](https://zhuanlan.zhihu.com/p/269069974)
 ## <span id="7">B-Tree</span>
+```c
+typedef struct HeaderNode{
+	off_t rootPointer;
+	size_t keySize;
+	size_t valSize;
+	int pageSize;
+}HeaderNode;
+typedef ssize_t BNodeST;
+typedef struct BNode{
+	off_t* childPointers;
+	void* pKey;
+	void* pValue;
+	off_t selfPointer;//标记这个node在文件的偏移位置,为0时代表新插入的node,还没有写入文件
+	BNodeST size;
+}BNode;
+typedef bool(*BKeyCompareFuncT)(const void*, const void*);
+typedef void(*BForEachFuncT)(const void*, const void*);
+typedef struct BTree{
+	HeaderNode head;
+	BKeyCompareFuncT equalFunc;
+	BKeyCompareFuncT lessFunc;
+	void* tmpRet;
+	int fd;
+	unsigned short maxNC;
+	unsigned short minNC;
+}BTree;
+```
+B树是一种平衡多路查找树，特征如下：  
+
++	任意分支等高，叶子结点永远位于同一层（这里的叶子结点是实际存在的树结点，事实上很多教材在介绍B树的时候把叶子结点看作查找失败的NULL结点，这或许是来源于作者的思路？但B树好像并不需要按照这种方式理解，判断一个结点是否为叶子结点时也只需判断第一个孩子指针是否为空）
++	除叶子结点外一个含有N个关键字的结点必然有N+1个孩子，B树的阶为结点可以容纳最大关键字数+1
++	linux对外存与内存的数据交换以页为单位，所以B树结点大小通常等于页大小；除根结点外，结点关键字数位于区间[t-1, 2t-1]，t>=2，其中t为B树的最小度数；计算结点最大关键字数通常为 ⌊page_size/(key_size+value_size+point_size)⌋（根据实现方式有少许区别，比如这个实现在每页起始写入了4字节的关键字数）；关键字数区间[t-1, 2t-1]可以保证B树结点分裂或者合并时依然保持B树特性
++	任意结点中任意两个关键字k1，k2之间的关键字和孩子结点的关键字必然大于k1，小于k2
++	B树增删改查的时间复杂度log(2t-1, N) ~ log(t-1, N)
+  
+下面是B树的插入和删除步骤，同时将红黑树转化为2-3-4树进行比较：  
+
+[**插入步骤：**]()  
+
+1. 若插入后的结点关键字数不大于2t-1，则插入成功，否则转到步骤2
+    - 红黑树总是以红色结点插入，若插入后关键字数不大于3，会有三种情况：
+    	1. 此结点为根结点，设置为黑色
+    	2. 父结点为黑色，这种情况不需要做处理
+    	3. 父结点为红色，这时候叔叔结点必为NULL结点或者黑色结点，这种情况旋转后变色便可（叔叔结点为NULL结点是最开始处理的叶子结点情况，为黑色结点时是结点分离上升后的情况）
+2. 以⌊t⌋为分界将结点拆分为左中右3部分，左边部分保留在原结点中，右边部分移动到新结点，将中间部分和指向新结点的指针上升到父结点中，然后继续进行步骤1判断；若没有父结点，则产生了新的根结点
+    - 相当于将父结点和叔叔结点设置为黑色，祖父结点设置为红色，转到步骤1判断
+
+B树插入方法并不唯一，各种方法大同小异，文中实现是采用提前分裂的方式进行插入，去除了回溯的步骤，但是在顺序插入的时候，这种方式会造成绝大部分的结点只包含最小个数的关键字从而增加结点个数和树深度，所以这种实现方式并不推荐  
+
+[**删除步骤：**]()  
+
+1. 若结点执行删除或关键字下移操作后关键字数仍大于等于t-1，则删除成功，否则转到步骤2
+	- 执行删除或下移操作后必为2-或者3-结点，相当于红黑树删除的是红色结点（如果删除的是黑色结点另外一个红色结点自动变为黑色）
+	- 叶子结点删除操作对应红黑树中下面两种情况： 
+		1. 删除结点为红色，直接删除 [**C2**](#6-2)
+		2. 删除结点为黑色，此时必然有且只有一个红色孩子，将此孩子结点替换删除结点并将颜色设置为黑 [**C1**](#6-2)
+2. 若结点相邻兄弟关键字数大于t-1，则将兄弟结点最小（或最大）的关键字上移到父结点，并将父结点对应关键字下移到此结点，若此结点不是叶子，还需移动对应孩子指针；若相邻兄弟关键字数均等于t-1则转到步骤3
+	- 这种情况相当于红黑树中兄弟结点是黑色结点且有红色孩子，这时候旋转变色即可 [**C5**](#6-2)
+3. 父结点对应关键字下移并将此结点与某个兄弟结点合并，父结点关键字数减一，若父结点为根结点且关键字数为0，重设根结点，否则将父结点转到步骤1判断
+	- 下移的关键字相当于红黑树中对兄弟结点和父结点重新着色的情况，因为下移关键字必为红黑树中的红色结点，下移到新结点后变为黑色，左右关键字变为红色，相当于删除图 [**C4**](#6-2)，如果下移关键字是黑色结点则需进行 [**C3**](#6-2)步骤将下移结点转化为红色结点
+
+同样的，B树删除方法也不唯一，比如步骤2和步骤3，不是非得判断两个相邻兄弟都不能借才合并，可以在第一个相邻兄弟不够借之后便选择与之合并，这样树结点数还能减少1，不过因为父结点关键字数减1，可能会增加回溯的路程，所以具体的选择就见仁见智了
 ## <span id="8">B+Tree</span>
