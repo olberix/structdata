@@ -125,6 +125,7 @@ int main(int argc, char const *argv[])
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BTree().insert(bt, &key, &val);
+		printf("done-insert--3--%d\n", i);
 	}
 
 

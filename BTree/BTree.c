@@ -7,7 +7,9 @@
 #include "../SqStack/SqStack.h"
 
 extern int fsync(int);
+extern int fdatasync(int);
 extern int getpagesize();
+#define PAGE_RATE 1 //实际页大小之内存页大小倍数
 #define KEYSIZE (bt->head.keySize)
 #define VALSIZE (bt->head.valSize)
 #define PAGESIZE (bt->head.pageSize)
@@ -115,12 +117,12 @@ static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc,
 	CONDCHECK(bt->fd > 0, STATUS_FDERROR);
 	if (flag == 0){//文件存在,代表已经创建
 		CONDCHECK(read(bt->fd, &(bt->head), sizeof(HeaderNode)) == sizeof(HeaderNode), STATUS_RDERROR);
-		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == getpagesize(), STATUS_SIZEERROR);
+		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == getpagesize() * PAGE_RATE, STATUS_SIZEERROR);
 	}
 	else{
 		KEYSIZE = keySize;
 		VALSIZE = valSize;
-		PAGESIZE = getpagesize();
+		PAGESIZE = getpagesize() * PAGE_RATE;
 		WRITEHEADER(bt);
 	}
 	POINTCREATE(EMPTYDEF, bt->tmpRet, void, valSize);

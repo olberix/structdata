@@ -85,4 +85,6 @@ static const char* errStr[] = {
 
 #define TOCONSTANT(type, point) (*(type*)point)
 
+typedef ssize_t BNodeST;
+
 #endif
