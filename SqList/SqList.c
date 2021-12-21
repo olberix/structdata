@@ -3,7 +3,7 @@
 
 static SqList* create(size_t ESize, const size_t* pLSize)
 {
-	CONDCHECK(ESize > 0, STATUS_SIZEERROR);
+	CONDCHECK(ESize > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
 	POINTCREATE(SqList*, ret, SqList, sizeof(SqList));
 	size_t _size = INIT_SIZE;
 	if (pLSize)
@@ -34,13 +34,13 @@ static inline void CHECK_REALLOC(SqList* pList)
 		return;
 	size_t _size = pList->size * INCREASE_RATE;
 	pList->pElems = (void*)realloc(pList->pElems, pList->e_S * _size);
-	CONDCHECK(pList->pElems, STATUS_OVERFLOW);
+	CONDCHECK(pList->pElems, STATUS_OVERFLOW, __FILE__, __LINE__);
 	pList->size = _size;
 }
 
 static void insert(SqList* pList, size_t loc, const void* elem)
 {
-	CONDCHECK(loc <= pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc <= pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
 	CHECK_REALLOC(pList);
 	size_t e_S = pList->e_S;
 	void* locAddr = pList->pElems + loc * e_S;
@@ -56,13 +56,13 @@ static inline void push_back(SqList* pList, const void* elem)
 
 static inline void change(SqList* pList, size_t loc, const void* elem)
 {
-	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
 	memcpy(pList->pElems + loc * pList->e_S, elem, pList->e_S);
 }
 
 static const void* erase(SqList* pList, size_t loc)
 {
-	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
 	void* locAddr = pList->pElems + loc * pList->e_S;
 	memcpy(pList->tmpRet, locAddr, pList->e_S);
 	memmove(locAddr, locAddr + pList->e_S, pList->e_S * (pList->length - 1 - loc));
@@ -72,7 +72,7 @@ static const void* erase(SqList* pList, size_t loc)
 
 static inline const void* at(SqList* pList, size_t loc)
 {
-	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
 	return pList->pElems + loc * pList->e_S;
 }
 
@@ -101,14 +101,14 @@ static void reverse(SqList* pList)
 
 static inline void for_each(SqList* pList, SqlFEFuncT func)
 {
-	CONDCHECK(pList->length != 0, STATUS_NOELEM);
+	CONDCHECK(pList->length != 0, STATUS_NOELEM, __FILE__, __LINE__);
 	for (size_t i = 0; i < pList->length; i++)
 		func(i, pList->pElems + i * pList->e_S);
 }
 
 static inline void r_for_each(SqList* pList, SqlFEFuncT func)
 {
-	CONDCHECK(pList->length != 0, STATUS_NOELEM);
+	CONDCHECK(pList->length != 0, STATUS_NOELEM, __FILE__, __LINE__);
 	for (size_t i = pList->length; i >= 1; i--)/*if i >= 0, unsigned arith will overflow*/
 		func(i - 1, pList->pElems + (i - 1) * pList->e_S);
 }

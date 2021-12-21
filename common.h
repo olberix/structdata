@@ -17,15 +17,16 @@ enum StatusCode{
 	STATUS_NULLFUNC = 4,
 	STATUS_DEERROR = 5,
 	STATUS_OFFSETERROR = 6,
-	STATUS_FDERROR = 7,
-	STATUS_RDERROR = 8,
-	STATUS_WRERROR = 9,
-	STATUS_FALLOCATEERROR = 10,
+	STATUS_FILEUNMATCHED = 7,
+	STATUS_FDERROR = 8,
+	STATUS_RDERROR = 9,
+	STATUS_WRERROR = 10,
+	STATUS_FALLOCATEERROR = 11,
 };
 
 static const char* errStr[] = {
 	"invalid index", "overflow", "no elem", "elem size error", "null function", "degree error", "offset error",
-	"file descriptor error", "read error", "write error", "fallocate error",
+	"file unmatched", "file descriptor error", "read error", "write error", "fallocate error",
 };
 
 #define FREE(p) do{\
@@ -35,9 +36,10 @@ static const char* errStr[] = {
 
 /*-DDEBUG -g -rdynamic*/
 #ifdef DEBUG
-#define CONDCHECK(con, code) do{\
+#define CONDCHECK(con, code, file, line) do{\
 	if (!(con)){\
-		if ((code) <= 6)\
+		printf("%s:%d\n", file, line);\
+		if ((code) <= STATUS_FDERROR)\
 			fprintf(stderr, "%s\n", errStr[code]);\
 		else{\
 			perror(errStr[code]);\
@@ -59,6 +61,7 @@ static const char* errStr[] = {
 #else
 #define CONDCHECK(con, code) do{\
 	if (!(con)){\
+		printf("%s:%d\n", file, line);\
 		fprintf(stderr, "%s\n", errStr[code]);\
 	}\
 }while (0)
@@ -77,7 +80,7 @@ static const char* errStr[] = {
 #define EMPTYDEF
 #define POINTCREATE(def, point, type, size)\
 	def point = (type*)malloc(size);\
-	CONDCHECK(point, STATUS_OVERFLOW);
+	CONDCHECK(point, STATUS_OVERFLOW, __FILE__, __LINE__);
 
 #define POINTCREATE_INIT(def, point, type, size)\
 	POINTCREATE(def, point, type, size);\

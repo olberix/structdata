@@ -11,7 +11,7 @@ static const void* get_top(SqStack* stack)
 {
 	SqList* pList = stack->list;
 	size_t length = SqList().length(pList);
-	CONDCHECK(length > 0, STATUS_NOELEM);
+	CONDCHECK(length > 0, STATUS_NOELEM, __FILE__, __LINE__);
 	return SqList().at(pList, length - 1);
 }
 
@@ -19,7 +19,7 @@ static const void* pop(SqStack* stack)
 {
 	SqList* pList = stack->list;
 	size_t length = SqList().length(pList);
-	CONDCHECK(length > 0, STATUS_NOELEM);
+	CONDCHECK(length > 0, STATUS_NOELEM, __FILE__, __LINE__);
 	return SqList().erase(pList, length - 1);
 }
 

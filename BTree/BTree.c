@@ -29,7 +29,7 @@ static void WRITEHEADER(BTree* bt)
 	POINTCREATE_INIT(char*, tmpStr, char, PAGESIZE);
 	memcpy(tmpStr, &(bt->head), sizeof(HeaderNode));
 	lseek(bt->fd, 0, SEEK_SET);
-	CONDCHECK(write(bt->fd, tmpStr, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
+	CONDCHECK(write(bt->fd, tmpStr, PAGESIZE) == PAGESIZE, STATUS_WRERROR, __FILE__, __LINE__);
 	FREE(tmpStr);
 }
 
@@ -39,13 +39,13 @@ static inline void READNODE(BTree* bt, off_t pointer, BNode* node)
 	lseek(bt->fd, pointer, SEEK_SET);
 	node->selfPointer = pointer;
 	BNodeST _size = sizeof(node->size);
-	CONDCHECK(read(bt->fd, &(node->size), _size) == _size, STATUS_RDERROR);
+	CONDCHECK(read(bt->fd, &(node->size), _size) == _size, STATUS_RDERROR, __FILE__, __LINE__);
 	_size = node->size * KEYSIZE;
-	CONDCHECK(read(bt->fd, node->pKey, _size) == _size, STATUS_RDERROR);
+	CONDCHECK(read(bt->fd, node->pKey, _size) == _size, STATUS_RDERROR, __FILE__, __LINE__);
 	_size = node->size * VALSIZE;
-	CONDCHECK(read(bt->fd, node->pValue, _size) == _size, STATUS_RDERROR);
+	CONDCHECK(read(bt->fd, node->pValue, _size) == _size, STATUS_RDERROR, __FILE__, __LINE__);
 	_size = (node->size + 1) * sizeof(off_t);//文件读取node必然有值,页剩余空间用0填充,故这里childPointers不用清0
-	CONDCHECK(read(bt->fd, node->childPointers, _size) == _size, STATUS_RDERROR);
+	CONDCHECK(read(bt->fd, node->childPointers, _size) == _size, STATUS_RDERROR, __FILE__, __LINE__);
 }
 
 static inline bool ISLEAF(BNode* node)
@@ -85,7 +85,7 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 		node->selfPointer = lseek(bt->fd, 0, SEEK_HOLE);
 		sync = true;
 	}
-	CONDCHECK(node->selfPointer >= PAGESIZE && node->selfPointer % PAGESIZE == 0, STATUS_OFFSETERROR);
+	CONDCHECK(node->selfPointer >= PAGESIZE && node->selfPointer % PAGESIZE == 0, STATUS_OFFSETERROR, __FILE__, __LINE__);
 	POINTCREATE_INIT(char*, tmpStr, char, PAGESIZE);
 	memcpy(tmpStr, &(node->size), sizeof(node->size));
 	BNodeST _size = sizeof(node->size);
@@ -96,7 +96,7 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 		_size += VALSIZE * node->size;
 		memcpy(tmpStr + _size, node->childPointers, (node->size + 1) * sizeof(off_t));
 	}
-	CONDCHECK(write(bt->fd, tmpStr, PAGESIZE) == PAGESIZE, STATUS_WRERROR);
+	CONDCHECK(write(bt->fd, tmpStr, PAGESIZE) == PAGESIZE, STATUS_WRERROR, __FILE__, __LINE__);
 	FREE(tmpStr);
 	if (sync)
 		fdatasync(bt->fd);
@@ -104,20 +104,20 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 
 static inline void FILERELEASE(BTree* bt, BNode* node)
 {
-	CONDCHECK(fallocate(bt->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, node->selfPointer, PAGESIZE) >= 0, STATUS_FALLOCATEERROR);
+	CONDCHECK(fallocate(bt->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, node->selfPointer, PAGESIZE) >= 0, STATUS_FALLOCATEERROR, __FILE__, __LINE__);
 }
 
 static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc, BKeyCompareFuncT lessFunc, const char* fileName)
 {
-	CONDCHECK(keySize > 0 && valSize > 0, STATUS_SIZEERROR);
-	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC);
+	CONDCHECK(keySize > 0 && valSize > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
+	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC, __FILE__, __LINE__);
 	POINTCREATE_INIT(BTree*, bt, BTree, sizeof(BTree));
 	int flag = access(fileName, F_OK);
 	bt->fd = open(fileName, O_RDWR | O_CREAT, 777);
-	CONDCHECK(bt->fd > 0, STATUS_FDERROR);
+	CONDCHECK(bt->fd > 0, STATUS_FDERROR, __FILE__, __LINE__);
 	if (flag == 0){//文件存在,代表已经创建
-		CONDCHECK(read(bt->fd, &(bt->head), sizeof(HeaderNode)) == sizeof(HeaderNode), STATUS_RDERROR);
-		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == getpagesize() * PAGE_RATE, STATUS_SIZEERROR);
+		CONDCHECK(read(bt->fd, &(bt->head), sizeof(HeaderNode)) == sizeof(HeaderNode), STATUS_RDERROR, __FILE__, __LINE__);
+		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize && PAGESIZE == getpagesize() * PAGE_RATE, STATUS_SIZEERROR, __FILE__, __LINE__);
 	}
 	else{
 		KEYSIZE = keySize;
@@ -130,7 +130,7 @@ static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc,
 	bt->lessFunc = lessFunc;
 	bt->maxNC = (PAGESIZE - sizeof(off_t) - sizeof(size_t)) / (keySize + valSize + sizeof(off_t));
 	__typeof__(((BTree*)NULL)->maxNC) t = (bt->maxNC + 1) / 2;//最小度数t>=2
-	CONDCHECK(t >= 2, STATUS_DEERROR);//t要往下取整(0.5),若t往上取整,结点合成:t-1+t-2+1=2t-2,此时2(t+0.5)-2=2t-1刚好为最大结点数,
+	CONDCHECK(t >= 2, STATUS_DEERROR, __FILE__, __LINE__);//t要往下取整(0.5),若t往上取整,结点合成:t-1+t-2+1=2t-2,此时2(t+0.5)-2=2t-1刚好为最大结点数,
 	bt->minNC = t - 1;//但结点分解时,即分解成两个t-1,这时候没有多余结点合并到父结点,不符合逻辑
 	return bt;//同理t往下取整,合并和分解都符合B树性质,故t往下取整
 }

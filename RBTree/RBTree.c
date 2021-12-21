@@ -12,8 +12,8 @@
 
 static RBTree* create(size_t keySize, size_t valSize, RBKeyCompareFuncT equalFunc, RBKeyCompareFuncT lessFunc)
 {
-	CONDCHECK(keySize > 0 && valSize > 0, STATUS_SIZEERROR);
-	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC);
+	CONDCHECK(keySize > 0 && valSize > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
+	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC, __FILE__, __LINE__);
 	size_t tr_s = sizeof(RBTree);
 	POINTCREATE_INIT(RBTree*, ret, RBTree, tr_s);
 	ret->keySize = keySize;

@@ -3,7 +3,7 @@
 
 static DuCirLinkList* create(size_t ESize)
 {
-	CONDCHECK(ESize > 0, STATUS_SIZEERROR);
+	CONDCHECK(ESize > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
 	POINTCREATE(DuCirLinkList*, ret, DuCirLinkList, sizeof(DuCirLinkList));
 	POINTCREATE(EMPTYDEF, ret->tmpRet, void, ESize);
 	POINTCREATE_INIT(EMPTYDEF, HEAD(ret), DuCirLink, sizeof(DuCirLink));
@@ -59,7 +59,7 @@ static inline DuCirLink* FIND_LOCNODE(DuCirLinkList* pList, size_t loc)
 
 static void insert(DuCirLinkList* pList, size_t loc, const void* elem)
 {
-	CONDCHECK(loc <= pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc <= pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
 	POINTCREATE(DuCirLink*, node, DuCirLink, sizeof(DuCirLink));
 	POINTCREATE(EMPTYDEF, node->pElem, void, pList->e_S);
 	memcpy(node->pElem, elem, pList->e_S);
@@ -75,14 +75,14 @@ static inline void push_back(DuCirLinkList* pList, const void* elem)
 
 static inline void change(DuCirLinkList* pList, size_t loc, const void* elem)
 {
-	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
 	DuCirLink* locNode = FIND_LOCNODE(pList, loc);
 	memcpy(locNode->pElem, elem, pList->e_S);
 }
 
 static const void* erase(DuCirLinkList* pList, size_t loc)
 {
-	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
 	DuCirLink* locNode = FIND_LOCNODE(pList, loc);
 	DuCirLink* nextNode = locNode->next;
 	DuCirLink* priorNode = locNode->prior;
@@ -97,7 +97,7 @@ static const void* erase(DuCirLinkList* pList, size_t loc)
 
 static inline const void* at(DuCirLinkList* pList, size_t loc)
 {
-	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX);
+	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
 	DuCirLink* locNode = FIND_LOCNODE(pList, loc);
 	return locNode->pElem;
 }
@@ -109,7 +109,7 @@ static inline size_t length(DuCirLinkList* pList)
 
 static inline void for_each(DuCirLinkList* pList, DucLFEFuncT func)
 {
-	CONDCHECK(pList->length != 0, STATUS_NOELEM);
+	CONDCHECK(pList->length != 0, STATUS_NOELEM, __FILE__, __LINE__);
 	DuCirLink* node = BEGIN(pList);
 	for (size_t i = 0; node != END(pList); node = node->next, i++)
 		func(i, node->pElem);
@@ -117,7 +117,7 @@ static inline void for_each(DuCirLinkList* pList, DucLFEFuncT func)
 
 static inline void r_for_each(DuCirLinkList* pList, DucLFEFuncT func)
 {
-	CONDCHECK(pList->length != 0, STATUS_NOELEM);
+	CONDCHECK(pList->length != 0, STATUS_NOELEM, __FILE__, __LINE__);
 	DuCirLink* node = LAST(pList);
 	for (size_t i = pList->length - 1; node != END(pList); node = node->prior, i--)
 		func(i, node->pElem);
