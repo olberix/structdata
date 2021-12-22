@@ -38,7 +38,7 @@ static inline void READNODE(BTree* bt, off_t pointer, BNode* node)
 {
 	lseek(bt->fd, pointer, SEEK_SET);
 	node->selfPointer = pointer;
-	BNodeST _size = sizeof(node->size);
+	ssize_t _size = sizeof(node->size);
 	CONDCHECK(read(bt->fd, &(node->size), _size) == _size, STATUS_RDERROR, __FILE__, __LINE__);
 	_size = node->size * KEYSIZE;
 	CONDCHECK(read(bt->fd, node->pKey, _size) == _size, STATUS_RDERROR, __FILE__, __LINE__);
@@ -88,7 +88,7 @@ static inline void WRITENODE(BTree* bt, BNode* node)
 	CONDCHECK(node->selfPointer >= PAGESIZE && node->selfPointer % PAGESIZE == 0, STATUS_OFFSETERROR, __FILE__, __LINE__);
 	POINTCREATE_INIT(char*, tmpStr, char, PAGESIZE);
 	memcpy(tmpStr, &(node->size), sizeof(node->size));
-	BNodeST _size = sizeof(node->size);
+	ssize_t _size = sizeof(node->size);
 	memcpy(tmpStr + _size, node->pKey, KEYSIZE * node->size);
 	_size += KEYSIZE * node->size;
 	memcpy(tmpStr + _size, node->pValue, VALSIZE * node->size);
@@ -154,9 +154,9 @@ static void level_order_traverse(BTree* bt, BForEachFuncT func)
 		off_t pointer = TOCONSTANT(off_t, DlQueue().pop(queue));
 		READNODE(bt, pointer, node);
 		if (!ISLEAF(node))
-			for (BNodeST i = 0; i < node->size + 1; i++)
+			for (ssize_t i = 0; i < node->size + 1; i++)
 				DlQueue().push(queue, node->childPointers + i);
-		for (BNodeST i = 0; i < node->size; i++)
+		for (ssize_t i = 0; i < node->size; i++)
 			func(node->pKey + KEYSIZE * i, node->pValue + VALSIZE * i);
 #ifdef DEBUG
 		puts("-----");
@@ -174,13 +174,13 @@ static void __in_order_traverse(BTree* bt, off_t pointer, BForEachFuncT func)
 	BNode* node = NEWBNODE(bt);
 	READNODE(bt, pointer, node);
 	if (ISLEAF(node)){
-		for(BNodeST i = 0; i < node->size; i++)
+		for(ssize_t i = 0; i < node->size; i++)
 			func(node->pKey + i * KEYSIZE, node->pValue + i * VALSIZE);
 		RELEASEBNODE(&node);
 		return;
 	}
 	__in_order_traverse(bt, node->childPointers[0], func);
-	for (BNodeST i = 0; i < node->size; i++){
+	for (ssize_t i = 0; i < node->size; i++){
 		func(node->pKey + i * KEYSIZE, node->pValue + i * VALSIZE);
 		__in_order_traverse(bt, node->childPointers[i + 1], func);
 	}
@@ -194,10 +194,10 @@ static inline void traverse(BTree* bt, BForEachFuncT func)
 }
 
 //二分法查找pKey位于对比结点的位置
-static inline bool FINDKEYEXPECTLOC(BTree* bt, BNode* node, const void* pKey, BNodeST* loc)
+static inline bool FINDKEYEXPECTLOC(BTree* bt, BNode* node, const void* pKey, ssize_t* loc)
 {
-	BNodeST left = 0, right = node->size;
-	BNodeST last_mid = -100, mid;
+	ssize_t left = 0, right = node->size;
+	ssize_t last_mid = -100, mid;
 	do{
 		mid = (right + left) / 2;
 		if (bt->equalFunc(node->pKey + mid * KEYSIZE, pKey)){
@@ -227,7 +227,7 @@ static inline bool FINDKEYEXPECTLOC(BTree* bt, BNode* node, const void* pKey, BN
 }
 
 /*结点某位置数据往后移动一格*/
-static inline void MOVEBACKONESTEP(BTree* bt, BNode* node, BNodeST loc, BNodeST child_loc)
+static inline void MOVEBACKONESTEP(BTree* bt, BNode* node, ssize_t loc, ssize_t child_loc)
 {
 	if (loc < node->size){
 		memmove(node->pKey + KEYSIZE * (loc + 1), node->pKey + KEYSIZE * loc, KEYSIZE * (node->size - loc));
@@ -238,7 +238,7 @@ static inline void MOVEBACKONESTEP(BTree* bt, BNode* node, BNodeST loc, BNodeST 
 }
 
 /*结点某位置数据往前移动一格*/
-static inline void MOVEFORWARDONESTEP(BTree* bt, BNode* node, BNodeST loc, BNodeST child_loc)
+static inline void MOVEFORWARDONESTEP(BTree* bt, BNode* node, ssize_t loc, ssize_t child_loc)
 {
 	if (loc > 0 && loc < node->size){
 		memmove(node->pKey + KEYSIZE * (loc - 1), node->pKey + KEYSIZE * loc, KEYSIZE * (node->size - loc));
@@ -248,13 +248,13 @@ static inline void MOVEFORWARDONESTEP(BTree* bt, BNode* node, BNodeST loc, BNode
 		memmove(node->childPointers + child_loc - 1, node->childPointers + child_loc, sizeof(off_t) * (node->size + 1 - child_loc));
 }
 
-static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, BNodeST* rrp)
+static inline BNode* SPLITNODE(BTree* bt, BNode* node, BNode** pparent, ssize_t* rrp)
 {
 	BNode* spl = NULL;
 	if (bt->maxNC <= node->size){
 		spl = NEWBNODE(bt);
-		const BNodeST raise_I = node->size / 2;
-		const BNodeST spl_I = raise_I + 1;
+		const ssize_t raise_I = node->size / 2;
+		const ssize_t spl_I = raise_I + 1;
 		//移动node数据到分裂结点--begin--
 		spl->size = node->size - 1 - raise_I;
 		memcpy(spl->pKey, node->pKey + spl_I * KEYSIZE, spl->size * KEYSIZE);
@@ -310,7 +310,7 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 	BNode* parent = NULL;
 	do{
 		READNODE(bt, pointer, node);
-		BNodeST rrp;//如果结点分割,rrp便赋值上升key在parent结点中的索引
+		ssize_t rrp;//如果结点分割,rrp便赋值上升key在parent结点中的索引
 		BNode* spl = SPLITNODE(bt, node, &parent, &rrp);
 		if (spl){//如果spl有值返回,parent必不为NULL
 			if (bt->equalFunc(parent->pKey + rrp * KEYSIZE, pKey)){
@@ -325,7 +325,7 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
  				node = spl;
  			}
  		}
-		BNodeST loc;
+		ssize_t loc;
 		if (!FINDKEYEXPECTLOC(bt, node, pKey, &loc)){
 			memcpy(node->pValue + loc * VALSIZE, pValue, VALSIZE);
 			break;
@@ -353,7 +353,7 @@ static void insert(BTree* bt, const void* pKey, const void* pValue)
 static inline bool ERASE_FINDREPLACE(BTree* bt, const void* pKey, SqStack* stack_node, SqStack* stack_loc)
 {
 	BNode* node;//node为最终删除关键字所在的叶子结点,stack_node&stack_loc记录了路径信息并且包含了node
-	BNodeST loc;
+	ssize_t loc;
 	off_t pointer = ROOTPOINTER;
 	while(true){
 		node = NEWBNODE(bt);
@@ -388,7 +388,7 @@ static inline bool ERASE_FINDREPLACE(BTree* bt, const void* pKey, SqStack* stack
 			}while(true);
 		}
 		if (loc != node->size - 1){
-			BNodeST diff = node->size - 1 - loc;
+			ssize_t diff = node->size - 1 - loc;
 			memmove(node->pKey + loc * KEYSIZE, node->pKey + (loc + 1) * KEYSIZE, diff * KEYSIZE);
 			memmove(node->pValue + loc * VALSIZE, node->pValue + (loc + 1) * VALSIZE, diff * VALSIZE);
 		}
@@ -414,10 +414,10 @@ static inline void ERASE_BALANCE(BTree* bt, SqStack* stack_node, SqStack* stack_
 			}
 			break;
 		}
-		BNodeST loc = TOCONSTANT(BNodeST, SqStack().pop(stack_loc));
+		ssize_t loc = TOCONSTANT(ssize_t, SqStack().pop(stack_loc));
 		BNode* parent = TOCONSTANT(BNode*, SqStack().get_top(stack_node));
 		bool ret = false;
-		BNodeST mploc;
+		ssize_t mploc;
 		BNode* mlt = NULL, *mrt = NULL;
 		//这里是一个艰难的抉择,究竟是判断一个兄弟不够就合并还是判断完两个兄弟不够再选择一个合并
 		//前者做法可以让树的结点变少但是可能会大概率增加回溯路程,后者反之(但会稳定多出一次系统调用)
@@ -494,7 +494,7 @@ static void erase(BTree* bt, const void* pKey)
 	if (!ROOTPOINTER)
 		return;
 	SqStack* stack_node = SqStack().create(sizeof(BNode*), NULL);
-	SqStack* stack_loc = SqStack().create(sizeof(BNodeST), NULL);
+	SqStack* stack_loc = SqStack().create(sizeof(ssize_t), NULL);
 	bool ret = ERASE_FINDREPLACE(bt, pKey, stack_node, stack_loc);
 	if (ret)
 		ERASE_BALANCE(bt, stack_node, stack_loc);
@@ -515,7 +515,7 @@ static const void* at(BTree* bt, const void* pKey)
 	BNode* node = NEWBNODE(bt);
 	do{
 		READNODE(bt, pointer, node);
-		BNodeST loc;
+		ssize_t loc;
 		if (FINDKEYEXPECTLOC(bt, node, pKey, &loc)){
 			if (ISLEAF(node)){
 				RELEASEBNODE(&node);
