@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <execinfo.h>
+#include <unistd.h>
 
 /*
 *所有实现都不是线程安全
@@ -59,7 +60,7 @@ static const char* errStr[] = {
 	}\
 }while (0)
 #else
-#define CONDCHECK(con, code) do{\
+#define CONDCHECK(con, code, file, line) do{\
 	if (!(con)){\
 		printf("%s:%d\n", file, line);\
 		fprintf(stderr, "%s\n", errStr[code]);\
@@ -87,7 +88,5 @@ static const char* errStr[] = {
 	memset(point, 0, size);
 
 #define TOCONSTANT(type, point) (*(type*)point)
-
-typedef ssize_t BNodeST;
 
 #endif
