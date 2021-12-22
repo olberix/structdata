@@ -1,6 +1,6 @@
 #ifndef _SQ_LIST__
 #define _SQ_LIST__
-#include "../common.h"
+#include "../common/common.h"
 #include <stdbool.h>
 
 #define INIT_SIZE 150

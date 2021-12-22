@@ -1,6 +1,6 @@
 #ifndef _B_TREE__
 #define _B_TREE__
-#include "../common.h"
+#include "../common/common.h"
 #include <stdbool.h>
 
 typedef struct HeaderNode{

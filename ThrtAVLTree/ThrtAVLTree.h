@@ -1,6 +1,6 @@
 #ifndef _AVL_TREE__
 #define _AVL_TREE__
-#include "../common.h"
+#include "../common/common.h"
 #include <stdbool.h>
 
 typedef struct AVLNode{

@@ -1,6 +1,5 @@
 #ifndef _SQ_STACK__
 #define _SQ_STACK__
-#include "../common.h"
 #include "../SqList/SqList.h"
 
 typedef struct SqStack{

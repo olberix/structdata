@@ -7,7 +7,7 @@
 */
 #ifndef _RB_TREE__
 #define _RB_TREE__
-#include "../common.h"
+#include "../common/common.h"
 #include <stdbool.h>
 
 static const unsigned char RB_RED = 0x0;

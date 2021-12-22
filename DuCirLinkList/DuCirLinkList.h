@@ -1,6 +1,6 @@
 #ifndef _DUCIRLINKLIST__
 #define _DUCIRLINKLIST__
-#include "../common.h"
+#include "../common/common.h"
 #include <stdbool.h>
 
 typedef struct DuCirLink{
