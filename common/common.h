@@ -12,22 +12,24 @@
 
 enum StatusCode{
 	STATUS_INVALIDINDEX = 0,
-	STATUS_OVERFLOW = 1,
-	STATUS_NOELEM = 2,
-	STATUS_SIZEERROR = 3,
-	STATUS_NULLFUNC = 4,
-	STATUS_DEERROR = 5,
-	STATUS_OFFSETERROR = 6,
-	STATUS_FILEUNMATCHED = 7,
-	STATUS_FDERROR = 8,
-	STATUS_RDERROR = 9,
-	STATUS_WRERROR = 10,
-	STATUS_FALLOCATEERROR = 11,
+	STATUS_OVERFLOW,
+	STATUS_NOELEM,
+	STATUS_SIZEERROR,
+	STATUS_NULLFUNC,
+	STATUS_DEERROR,
+	STATUS_OFFSETERROR,
+	STATUS_FILEUNMATCHED,
+	STATUS_MMAPFAILED,
+
+	STATUS_FDERROR,
+	STATUS_RDERROR,
+	STATUS_WRERROR,
+	STATUS_FALLOCATEERROR,
 };
 
 static const char* errStr[] = {
 	"invalid index", "overflow", "no elem", "elem size error", "null function", "degree error", "offset error",
-	"file unmatched", "file descriptor error", "read error", "write error", "fallocate error",
+	"file unmatched", "mmap failed", "file descriptor error", "read error", "write error", "fallocate error",
 };
 
 #define FREE(p) do{\
@@ -40,7 +42,7 @@ static const char* errStr[] = {
 #define CONDCHECK(con, code, file, line) do{\
 	if (!(con)){\
 		printf("%s:%d\n", file, line);\
-		if ((code) <= STATUS_FDERROR)\
+		if ((code) < STATUS_FDERROR)\
 			fprintf(stderr, "%s\n", errStr[code]);\
 		else{\
 			perror(errStr[code]);\
