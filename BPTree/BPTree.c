@@ -7,6 +7,7 @@
 #include "../DlQueue/DlQueue.h"
 #include "../SqStack/SqStack.h"
 
+//以一个字节整数为索引,记录这个整数从左到右第几个bit位为0
 static const unsigned char bit_index_map[255] = {
 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -16,10 +17,10 @@ static const unsigned char bit_index_map[255] = {
 };
 extern int fsync(int);
 extern int getpagesize();
-//元文件映射长度
+//元文件映射长度,这里映射1G,以索引页4K,key大小取极端值4字节为例,1G映射大小大约能保存2500w条数据(1G*8bit/(maxNC+1))
 #define MMAP_SIZE 1024 * 1024 * 1024
-//实际页大小之内存页大小倍数
-#define PAGE_RATE 1
+//索引页大小之内存页大小倍数
+#define PAGE_RATE 2
 #define KEYSIZE (bt->meta.keySize)
 #define VALSIZE (bt->meta.valSize)
 #define META_PAGESIZE (bt->meta.metaPageSize)
@@ -298,7 +299,7 @@ static BPTree* create(size_t keySize, size_t valSize, BPKeyCompareFuncT equalFun
 		ROOTPOINTER = FIRSTPOINTER = -1;
 		FILE_EXTENDMETA(bt);
 	}
-	bt->maxNC = (INDEX_PAGESIZE - sizeof(off_t) - sizeof(size_t) - sizeof(unsigned char)) / (keySize + sizeof(off_t));
+	bt->maxNC = (INDEX_PAGESIZE - sizeof(off_t) - sizeof(__keynode_size_t) - sizeof(unsigned char)) / (keySize + sizeof(off_t));
 	__keynode_size_t t = (bt->maxNC + 1) / 2;
 	CONDCHECK(t >= 2, STATUS_DEERROR, __FILE__, __LINE__);
 	bt->minNC = t - 1;
