@@ -130,9 +130,9 @@ static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc,
 	bt->lessFunc = lessFunc;
 	bt->maxNC = (PAGESIZE - sizeof(off_t) - sizeof(size_t)) / (keySize + valSize + sizeof(off_t));
 	__typeof__(((BTree*)NULL)->maxNC) t = (bt->maxNC + 1) / 2;//最小度数t>=2
-	CONDCHECK(t >= 2, STATUS_DEERROR, __FILE__, __LINE__);//t要往下取整(0.5),若t往上取整,结点合成:t-1+t-2+1=2t-2,此时2(t+0.5)-2=2t-1刚好为最大结点数,
-	bt->minNC = t - 1;//但结点分解时,即分解成两个t-1,这时候没有多余结点合并到父结点,不符合逻辑
-	return bt;//同理t往下取整,合并和分解都符合B树性质,故t往下取整
+	CONDCHECK(t >= 2, STATUS_DEERROR, __FILE__, __LINE__);//t往上往下取整都行
+	bt->minNC = t - 1;
+	return bt;
 }
 
 static inline void destroy(BTree** sbt)
