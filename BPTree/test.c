@@ -51,14 +51,72 @@ int main(int argc, char const *argv[])
 	TYVALUE val;
 	memcpy(val.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
 	// memcpy(key.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
-	int range = 250000;
-	for(int i = 0; i < range; i++){
+	int range = 54;
+	for (int i = 0; i < range; i += 3){
+		key.a = i;
+		key.b = i + 0.5;
+		val.a = 3 * i + 1;
+		val.b = val.a + 0.123;
+		BPTree().insert(tree, &key, &val);
+		// printf("11111----insert-%d\n", i);
+	}
+	puts("222222-----**********");
+	for (int i = range - 1; i >= 0; i -= 3){
+		key.a = i;
+		key.b = i + 0.5;
+		val.a = 3 * i + 1;
+		val.b = val.a + 0.123;
+		BPTree().insert(tree, &key, &val);
+		// printf("22222----insert-%d\n", i);
+	}
+	puts("333333-----**********");
+	for (int i = range - 2; i >= 0; i -= 3){
+		key.a = i;
+		key.b = i + 0.5;
+		val.a = 3 * i + 1;
+		val.b = val.a + 0.123;
+		BPTree().insert(tree, &key, &val);
+		// printf("33333----insert-%d\n", i);
+	}
+
+	puts("444444-----**********");
+	for (int i = 0; i < range; i=i+2){
 		key.a = i;
 		key.b = key.a + 0.5;
-		val.a = key.a * 2;
-		val.b = val.a + 0.5;
+		BPTree().erase(tree, &key);
+		// printf("done-erase--2--%d\n", i);
+	}
+	puts("555555-----**********");
+	for (int i = 0; i < range; i=i+2){
+		key.a = i;
+		key.b = key.a + 0.5;
+		val.a = 3 * i + 1;
+		val.b = val.a + 0.123;
 		BPTree().insert(tree, &key, &val);
-		printf("%d-----done\n", i);
+		// printf("done-insert--2--%d\n", i);
+	}
+
+	for (int i = 0; i < range / 2; i=i+3){
+		key.a = i;
+		key.b = key.a + 0.5;
+		BPTree().erase(tree, &key);
+		// printf("done-erase--3--%d\n", i);
+	}
+
+	for (int i = range - 3; i >= range / 2; i=i-3){
+		key.a = i;
+		key.b = key.a + 0.5;
+		BPTree().erase(tree, &key);
+		// printf("done-erase--3--%d\n", i);
+	}
+
+	for (int i = 0; i < range; i=i+3){
+		key.a = i;
+		key.b = i + 0.5;
+		val.a = 3 * i + 1;
+		val.b = val.a + 0.123;
+		BPTree().insert(tree, &key, &val);
+		// printf("done-insert--3--%d\n", i);
 	}
 
 	// BPTree().traverse(tree, foreach);
@@ -67,13 +125,18 @@ int main(int argc, char const *argv[])
 		key.a = i;
 		key.b = key.a + 0.5;
 		const void* ret = BPTree().at(tree, &key);
-		val = TOCONSTANT(TYVALUE, ret);
-		if (!(val.a == key.a * 2 && val.b == val.a + 0.5)){
-			printf("%d--error---------", key.a);
-			break;
+		if (!ret){
+			printf("%d-----not find\n", key.a);
 		}
-		if (i % 30000 == 0)
-			puts("true---------");
+		else{
+			val = TOCONSTANT(TYVALUE, ret);
+			if (!(val.a == key.a * 3 + 1 && val.b == val.a + 0.123)){
+				printf("%d--error---------", key.a);
+				break;
+			}
+			if (i % 30000 == 0)
+				puts("true---------");
+		}
 	}
 	puts("===================");
 	BPTree().destroy(&tree);

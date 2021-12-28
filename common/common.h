@@ -89,6 +89,6 @@ static const char* errStr[] = {
 	POINTCREATE(def, point, type, size);\
 	memset(point, 0, size);
 
-#define TOCONSTANT(type, point) (*(type*)point)
+#define TOCONSTANT(type, point) (*((type*)(point)))
 
 #endif

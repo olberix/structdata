@@ -4,7 +4,6 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <string.h>
-#include "../DlQueue/DlQueue.h"
 #include "../SqStack/SqStack.h"
 
 //以一个字节整数为索引,记录这个整数从左到右第几个bit位为0
@@ -17,10 +16,10 @@ static const unsigned char bit_index_map[255] = {
 };
 extern int fsync(int);
 extern int getpagesize();
-//元文件映射长度,这里映射1G,以索引页4K,key大小取极端值4字节为例,1G映射大小大约能保存2500w条数据(1G*8bit/(maxNC+1))
+//元文件映射长度,这里映射1G,以索引页4K,key大小取极端值4字节为例,1G映射大约能保存2500w条数据(1G*8/(maxNC+1))
 #define MMAP_SIZE 1024 * 1024 * 1024
 //索引页大小之内存页大小倍数
-#define PAGE_RATE 2
+#define PAGE_RATE 1
 #define KEYSIZE (bt->meta.keySize)
 #define VALSIZE (bt->meta.valSize)
 #define META_PAGESIZE (bt->meta.metaPageSize)
@@ -92,7 +91,7 @@ static inline off_t __apply_valid_value_address(BPTree* bt)
 				if (*tmp == 0xFF)
 					idxRoute += 8;
 				else{
-					unsigned char n = bit_index_map[(int)(*tmp)];
+					unsigned char n = bit_index_map[(unsigned char)(*tmp)];
 					idxRoute += n;
 					*tmp |= 1 << (8 - n);
 					return (idxRoute - 1) * VALSIZE;
@@ -120,7 +119,7 @@ static inline off_t __apply_valid_keynode_address(BPTree* bt)
 				if (*tmp == 0xFF)
 					idxRoute += 8;
 				else{
-					unsigned char n = bit_index_map[(int)(*tmp)];
+					unsigned char n = bit_index_map[(unsigned char)(*tmp)];
 					idxRoute += n;
 					*tmp |= 1 << (8 - n);
 					return (idxRoute - 1) * INDEX_PAGESIZE;
@@ -207,7 +206,7 @@ static inline void FILE_VALUERELEASE(BPTree* bt, off_t valPointer)
 //存储顺序:isLeaf-size-pKey-childPointers
 static inline void FILE_KEYNODEWRITE(BPTree* bt, BPNode* node)
 {	
-	if (node->size == 0 || node->size > bt->maxNC)//超出最大关键字数的结点分解之后会继续写,为0时会进行合并或释放
+	if (node->size == 0 || node->size > bt->maxNC)//结点最终会释放,合并或分解
 		return;
 	if (node->selfPointer == -1)
 		node->selfPointer = __apply_valid_keynode_address(bt);
@@ -251,6 +250,7 @@ static inline void FILE_KEYNODERELEASE(BPTree* bt, BPNode* node)
 {
 	__release_keynode_address(bt, node->selfPointer);
 	CONDCHECK(fallocate(bt->fdIndex, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, node->selfPointer, INDEX_PAGESIZE) >= 0, STATUS_FALLOCATEERROR, __FILE__, __LINE__);
+	node->selfPointer = -1;
 }
 
 //写元信息
@@ -268,7 +268,19 @@ static inline void MOVEBACKONESTEP(BPTree* bt, BPNode* node, __keynode_size_t lo
 		return;
 	}
 	if (ISLEAF(node))//移动next指针
-		memmove(node->childPointers + loc + 1, node->childPointers + loc, sizeof(off_t));
+		node->childPointers[loc + 1] = node->childPointers[loc];
+}
+
+/*结点某位置及之后数据往前移动一格*/
+static inline void MOVEFORWARDONESTEP(BPTree* bt, BPNode* node, __keynode_size_t loc)
+{
+	if (loc < node->size){
+		memmove(node->pKey + KEYSIZE * (loc - 1), node->pKey + KEYSIZE * loc, KEYSIZE * (node->size - loc));
+		memmove(node->childPointers + loc - 1, node->childPointers + loc, sizeof(off_t) * (node->size - loc + 1));
+		return;
+	}
+	if (ISLEAF(node))//移动next指针
+		node->childPointers[loc - 1] = node->childPointers[loc];
 }
 
 static BPTree* create(size_t keySize, size_t valSize, BPKeyCompareFuncT equalFunc, BPKeyCompareFuncT lessFunc, const char* filePath)
@@ -302,7 +314,7 @@ static BPTree* create(size_t keySize, size_t valSize, BPKeyCompareFuncT equalFun
 	bt->maxNC = (INDEX_PAGESIZE - sizeof(off_t) - sizeof(__keynode_size_t) - sizeof(unsigned char)) / (keySize + sizeof(off_t));
 	__keynode_size_t t = (bt->maxNC + 1) / 2;
 	CONDCHECK(t >= 2, STATUS_DEERROR, __FILE__, __LINE__);
-	bt->minNC = t - 1;
+	bt->minNC = t;
 	INDEXBITMAPEDGE = META_PAGESIZE / (1 + bt->maxNC);
 	POINTCREATE(EMPTYDEF, bt->tmpRet, void, valSize);
 	POINTCREATE(EMPTYDEF, bt->tmpWriteStr, char, INDEX_PAGESIZE);
@@ -471,17 +483,159 @@ static void insert(BPTree* bt, const void* pKey, const void* pValue)
 	}
 	//释放空间
 	RELEASEBPNODE(&node);
-	while(!SqStack().empty(stack_node)){
-		BPNode* vv = TOCONSTANT(BPNode*, SqStack().pop(stack_node));
-		RELEASEBPNODE(&vv);
-	}
+	SQSTACK_FOREACH(stack_node, BPNode*, {
+		RELEASEBPNODE(&value);
+	});
 	SqStack().destroy(&stack_node);
 	SqStack().destroy(&stack_loc);
 }
 
+static inline void __do_balance_erase(BPTree* bt, BPNode** nnode, SqStack* stack_node, SqStack* stack_loc)
+{
+	BPNode* newRoot = NULL, *sbl = NULL;
+	while(true){
+		puts("++++++++++++++++++");
+		//size满足,结束判断
+		if ((*nnode)->size >= bt->minNC)
+			break;
+		//根结点
+		if (SqStack().empty(stack_node)){
+			if (ISLEAF(*nnode)){
+				if ((*nnode)->size == 0){
+					ROOTPOINTER = FIRSTPOINTER = -1;
+					FILE_KEYNODERELEASE(bt, *nnode);
+				}
+				break;
+			}
+			if ((*nnode)->size < 2){
+				FILE_KEYNODERELEASE(bt, *nnode);
+				ROOTPOINTER = newRoot->selfPointer;
+			}
+			break;
+		}
+		//非根结点
+		if (!sbl) sbl = NEWBPNODE(bt);
+		BPNode* parent = TOCONSTANT(BPNode*, SqStack().pop(stack_node));
+		__keynode_size_t leftLoc, loc = TOCONSTANT(__keynode_size_t, SqStack().pop(stack_loc));
+		BPNode* left = NULL, *right = NULL;
+		bool ret = false;
+		//向左兄弟借
+		if (loc > 0){
+			leftLoc = loc - 1;
+			FILE_READNODE(bt, parent->childPointers[leftLoc], sbl);
+			if (sbl->size > bt->minNC){
+				MOVEBACKONESTEP(bt, *nnode, 0);
+				memcpy((*nnode)->pKey, sbl->pKey + KEYSIZE * (sbl->size - 1), KEYSIZE);
+				(*nnode)->childPointers[0] = sbl->childPointers[sbl->size - 1];
+				(*nnode)->size++;
+				sbl->childPointers[sbl->size - 1] = sbl->childPointers[sbl->size];
+				sbl->size--;
+				memcpy(parent->pKey + KEYSIZE * leftLoc, sbl->pKey + KEYSIZE * (sbl->size - 1), KEYSIZE);
+				FILE_KEYNODEWRITE(bt, *nnode);
+				FILE_KEYNODEWRITE(bt, sbl);
+				FILE_KEYNODEWRITE(bt, parent);
+				RELEASEBPNODE(nnode);
+				*nnode = parent;
+				ret = true;
+				break;
+			}
+			else{
+				left = sbl;
+				right = *nnode;
+			}
+		}
+		//向右兄弟借
+		if (!ret && loc + 1 != (*nnode)->size){
+			leftLoc = loc;
+			FILE_READNODE(bt, parent->childPointers[leftLoc + 1], sbl);
+			if (sbl->size > bt->minNC){
+				(*nnode)->childPointers[(*nnode)->size + 1] = (*nnode)->childPointers[(*nnode)->size];
+				memcpy((*nnode)->pKey + KEYSIZE * (*nnode)->size, sbl->pKey, KEYSIZE);
+				(*nnode)->childPointers[(*nnode)->size] = sbl->childPointers[0];
+				(*nnode)->size++;
+				MOVEFORWARDONESTEP(bt, sbl, 1);
+				sbl->size--;
+				memcpy(parent->pKey + KEYSIZE * leftLoc, (*nnode)->pKey + KEYSIZE * ((*nnode)->size - 1), KEYSIZE);
+				FILE_KEYNODEWRITE(bt, *nnode);
+				FILE_KEYNODEWRITE(bt, sbl);
+				FILE_KEYNODEWRITE(bt, parent);
+				RELEASEBPNODE(nnode);
+				*nnode = parent;
+				ret = true;
+				break;
+			}
+			else{
+				left = *nnode;
+				right = sbl;
+			}
+		}
+		//合并
+		if (!ret){
+			memcpy(left->pKey + KEYSIZE * left->size, right->pKey, KEYSIZE * right->size);
+			memcpy(left->childPointers + left->size, right->childPointers, sizeof(off_t) * (right->size + 1));
+			left->size += right->size;
+			MOVEFORWARDONESTEP(bt, parent, leftLoc + 1);
+			parent->childPointers[leftLoc] = left->selfPointer;
+			parent->size--;
+			FILE_KEYNODERELEASE(bt, right);
+			FILE_KEYNODEWRITE(bt, left);
+			FILE_KEYNODEWRITE(bt, parent);
+		}
+
+		if (newRoot) RELEASEBPNODE(&newRoot);
+		newRoot = left;
+		*nnode = parent;
+	}
+	if (newRoot) RELEASEBPNODE(&newRoot);
+	if (sbl) RELEASEBPNODE(&sbl);
+}
+
 static void erase(BPTree* bt, const void* pKey)
 {
-
+	//空树
+	if (ROOTPOINTER == -1)
+		return;
+	//找到叶子结点并记录路径
+	SqStack* stack_node = SqStack().create(sizeof(BPNode*), NULL);
+	SqStack* stack_loc = SqStack().create(sizeof(__keynode_size_t), NULL);
+	off_t pointer = ROOTPOINTER;
+	BPNode* node = NULL;
+	__keynode_size_t loc;
+	while(true){
+		node = NEWBPNODE(bt);
+		FILE_READNODE(bt, pointer, node);
+		loc = __find_key_sw_loc(bt, node, pKey);
+		if (ISLEAF(node))
+			break;
+		SqStack().push(stack_node, &node);
+		SqStack().push(stack_loc, &loc);
+		pointer = node->childPointers[loc];
+	}
+	//删除
+	if (bt->equalFunc(node->pKey + KEYSIZE * loc, pKey)){
+		FILE_VALUERELEASE(bt, node->childPointers[loc]);
+		MOVEFORWARDONESTEP(bt, node, loc + 1);
+		node->size--;
+		FILE_KEYNODEWRITE(bt, node);
+		if (node->size == loc--){
+			const void* keyMax = node->pKey + KEYSIZE * loc;
+			SQSTACK_FOREACH_REVERSE(stack_node, BPNode*, {
+				__keynode_size_t valueLoc = TOCONSTANT(__keynode_size_t, SqStack().at(stack_loc, key));
+				memcpy(value->pKey + KEYSIZE * valueLoc, keyMax, KEYSIZE);
+				FILE_KEYNODEWRITE(bt, value);
+				if (valueLoc + 1 != value->size)
+					break;
+			});
+		}
+		__do_balance_erase(bt, &node, stack_node, stack_loc);
+	}
+	//释放空间
+	RELEASEBPNODE(&node);
+	SQSTACK_FOREACH(stack_node, BPNode*, {
+		RELEASEBPNODE(&value);
+	});
+	SqStack().destroy(&stack_node);
+	SqStack().destroy(&stack_loc);
 }
 
 static const void* at(BPTree* bt, const void* pKey)
