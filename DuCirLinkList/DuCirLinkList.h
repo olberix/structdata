@@ -40,21 +40,19 @@ typedef struct DucListOp{
 
 #define DULIST_FOREACH(pList, type, logic) {\
 	DuCirLink* _NODE__ = BEGIN(pList);\
-	for (size_t _INDEX__ = 0; _NODE__ != END(pList); _INDEX__++){\
-		DuCirLink* tmpNode = _NODE__->next;\
-		type* _PVALUE__ = (type*)(_NODE__->pElem);\
+	for (size_t key = 0; _NODE__ != END(pList); key++){\
+		type value = TOCONSTANT(type, _NODE__->pElem);\
 		logic;\
-		_NODE__ = tmpNode;\
+		_NODE__ = _NODE__->next;\
 	}\
 }
 
 #define DULIST_FOREACH_REVERSE(pList, type, logic) {\
 	DuCirLink* _NODE__ = LAST(pList);\
-	for (size_t _INDEX__ = pList->length - 1; _NODE__ != END(pList); _INDEX__--){\
-		DuCirLink* tmpNode = _NODE__->prior;\
-		type* _PVALUE__ = (type*)(_NODE__->pElem);\
+	for (size_t key = pList->length - 1; _NODE__ != END(pList); key--){\
+		type value = TOCONSTANT(type, _NODE__->pElem);\
 		logic;\
-		_NODE__ = tmpNode;\
+		_NODE__ = _NODE__->prior;\
 	}\
 }
 

@@ -50,28 +50,20 @@ int main()
 	puts("++++++++++++++++++++++++++++++++");
 	SqList().sort(list, &cmp);
 	// SqList().for_each(list, &display);
-	SQLIST_FOREACH(list, StA, {
-		if (_PVALUE__->a % 2 == 0){
-			SqList().erase(list, _INDEX__);
-			_INDEX__--;
-			_PVALUE__--;
-		}
-	})
 	puts("++++++++++++++++++++++++++++++++");
 	SQLIST_FOREACH(list, StA, {
-		printf("[%d]\t%d\t%lf\n", _INDEX__, _PVALUE__->a, _PVALUE__->b);
-	})
+		printf("[%d]\t%d\t%lf\n", key, value.a, value.b);
+	});
 	tmp.a = 123456789;
 	SqList().change(list, 0, &tmp);
 	puts("++++++++++++++++++++++++++++++++");
-	SQLIST_FOREACH(list, StA, {
-		printf("[%d]\t%d\t%lf\n", _INDEX__, _PVALUE__->a, _PVALUE__->b);
-	})
+	SQLIST_FOREACH_REVERSE(list, StA, {
+		printf("[%d]\t%d\t%lf\n", key, value.a, value.b);
+	});
 	// puts("++++++++++++++++++++++++++++++++");
 	// SQLIST_FOREACH_REVERSE(list, StA, {
-	// 	printf("[%d]\t%d\t%lf\n", _INDEX__, _PVALUE__->a, _PVALUE__->b);
-	// })
-
+	// 	printf("[%d]\t%d\t%lf\n", key, value.a, value.b);
+	// });
 
 	// const StA* res = SqList().at(list, 0);
 	// printf("%d\n", res->a);

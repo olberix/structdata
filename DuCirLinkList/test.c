@@ -105,11 +105,11 @@ int main()
 	a = 15;
 	DucList().insert(list, 0, &a);
 	DULIST_FOREACH(list, int, {
-		printf("[%d]\t%d\n", _INDEX__, *_PVALUE__);
-	})
+		printf("[%d]\t%d\n", key, value);
+	});
 	DULIST_FOREACH_REVERSE(list, int, {
-		printf("[%d]\t%d\n", _INDEX__, *_PVALUE__);
-	})
+		printf("[%d]\t%d\n", key, value);
+	});
 	a = 123;
 	DucList().change(list, 0, &a);
 	int d = TOCONSTANT(int, DucList().at(list, 0));
