@@ -499,10 +499,9 @@ static void erase(BTree* bt, const void* pKey)
 	if (ret)
 		ERASE_BALANCE(bt, stack_node, stack_loc);
 	//释放空间返回
-	while(!SqStack().empty(stack_node)){
-		BNode* vv = TOCONSTANT(BNode*, SqStack().pop(stack_node));
-		RELEASEBNODE(&vv);
-	}
+	SQSTACK_FOREACH(stack_node, BNode*, {
+		RELEASEBNODE(&value);
+	});
 	SqStack().destroy(&stack_node);
 	SqStack().destroy(&stack_loc);
 }
