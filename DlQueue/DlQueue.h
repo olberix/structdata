@@ -14,6 +14,7 @@ typedef struct DlQueueOp{
 	void (*push)(DlQueue*, const void*);
 	bool (*empty)(DlQueue*);
 	void (*for_each)(DlQueue*, DucLFEFuncT);
+	const void* (*at)(DlQueue*, size_t);
 }DlQueueOp;
 
 #define DLQUEUE_FOREACH(queue, type, logic) DULIST_FOREACH((queue)->list, type, logic)

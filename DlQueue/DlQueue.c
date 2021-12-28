@@ -38,6 +38,11 @@ static inline void for_each(DlQueue* queue, DucLFEFuncT func)
 	DucList().for_each(queue->list, func);
 }
 
+static inline const void* at(DlQueue* queue, size_t loc)
+{
+	return DucList().at(queue->list, loc);
+}
+
 inline const DlQueueOp* GetDlQueueOpStruct()
 {
 	static const DlQueueOp OpList = {
@@ -48,6 +53,7 @@ inline const DlQueueOp* GetDlQueueOpStruct()
 		.push = push,
 		.empty = empty,
 		.for_each = for_each,
+		.at = at,
 	};
 	return &OpList;
 }

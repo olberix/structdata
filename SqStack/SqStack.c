@@ -49,6 +49,11 @@ static inline void for_each(SqStack* stack, SqlFEFuncT func)
 	SqList().for_each(stack->list, func);
 }
 
+static inline const void* at(SqStack* stack, size_t loc)
+{
+	return SqList().at(stack->list, loc);
+}
+
 inline const SqStackOp* GetSqStackOpStruct()
 {
 	static const SqStackOp OpList = {
@@ -60,6 +65,7 @@ inline const SqStackOp* GetSqStackOpStruct()
 		.push = push,
 		.empty = empty,
 		.for_each = for_each,
+		.at = at,
 	};
 	return &OpList;
 }

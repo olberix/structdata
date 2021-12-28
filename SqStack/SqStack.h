@@ -15,6 +15,7 @@ typedef struct SqStackOp{
 	void (*push)(SqStack*, const void*);
 	bool (*empty)(SqStack*);
 	void (*for_each)(SqStack*, SqlFEFuncT);
+	const void* (*at)(SqStack*, size_t);
 }SqStackOp;
 
 #define SQSTACK_FOREACH(stack, type, logic) SQLIST_FOREACH((stack)->list, type, logic)
