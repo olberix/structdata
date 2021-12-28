@@ -33,6 +33,7 @@ int main()
 	tmp.a = 1041;
 	tmp.b = 1042.1;
 	SqStack().push(stack, &tmp);
+	SqStack().push(stack, &tmp);
 	// tmp = TOCONSTANT(StB, SqStack().pop(stack));
 	tmp = TOCONSTANT(StB, SqStack().get_top(stack));
 	printf("%d\n", tmp.a);
@@ -40,6 +41,14 @@ int main()
 		puts("empty");
 	else
 		puts("not empty");
+
+	SQSTACK_FOREACH(stack, StB, {
+		printf("%d\t%d\t%f\t%f\n", key, value.a, value.b, value.c);
+	});
+	SQSTACK_FOREACH_REVERSE(stack, StB, {
+		printf("%d\t%d\t%f\t%f\n", key, value.a, value.b, value.c);
+	});
+
 	SqStack().destroy(&stack);
 	printf("%d\n", stack);
 

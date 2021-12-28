@@ -17,6 +17,9 @@ typedef struct SqStackOp{
 	void (*for_each)(SqStack*, SqlFEFuncT);
 }SqStackOp;
 
+#define SQSTACK_FOREACH(stack, type, logic) SQLIST_FOREACH((stack)->list, type, logic)
+#define SQSTACK_FOREACH_REVERSE(stack, type, logic) SQLIST_FOREACH_REVERSE((stack)->list, type, logic)
+
 extern const SqStackOp* GetSqStackOpStruct();
 #define SqStack() (*(GetSqStackOpStruct()))
 #endif

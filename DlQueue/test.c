@@ -14,10 +14,18 @@ int main(int argc, char const *argv[])
 	tmp.a = 11;
 	tmp.b = 'k';
 	DlQueue().push(queue, &tmp);
-	tmp = TOCONSTANT(StD, DlQueue().pop(queue));
-	printf("%d\t%c\n", tmp.a, tmp.b);
-	tmp = TOCONSTANT(StD, DlQueue().pop(queue));
-	printf("%d\t%c\n", tmp.a, tmp.b);
+	// tmp = TOCONSTANT(StD, DlQueue().pop(queue));
+	// printf("%d\t%c\n", tmp.a, tmp.b);
+	// tmp = TOCONSTANT(StD, DlQueue().pop(queue));
+	// printf("%d\t%c\n", tmp.a, tmp.b);
+
+	DLQUEUE_FOREACH(queue, StD, {
+		printf("%d\t%d\t%c\n", key, value.a, value.b);
+	});
+
+	DLQUEUE_FOREACH_REVERSE(queue, StD, {
+		printf("%d\t%d\t%c\n", key, value.a, value.b);
+	});
 
 	return 1;
 }

@@ -16,7 +16,9 @@ typedef struct DlQueueOp{
 	void (*for_each)(DlQueue*, DucLFEFuncT);
 }DlQueueOp;
 
+#define DLQUEUE_FOREACH(queue, type, logic) DULIST_FOREACH((queue)->list, type, logic)
+#define DLQUEUE_FOREACH_REVERSE(queue, type, logic) DULIST_FOREACH_REVERSE((queue)->list, type, logic)
+
 extern const DlQueueOp* GetDlQueueOpStruct();
 #define DlQueue() (*(GetDlQueueOpStruct()))
-
 #endif
