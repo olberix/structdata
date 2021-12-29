@@ -199,7 +199,7 @@ static inline const void* FILE_READVALUE(BPTree* bt, off_t valPointer)
 static inline void FILE_VALUERELEASE(BPTree* bt, off_t valPointer)
 {
 	__release_value_address(bt, valPointer);
-	CONDCHECK(fallocate(bt->fdData, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, valPointer, VALSIZE) >= 0, STATUS_FALLOCATEERROR, __FILE__, __LINE__);
+	// CONDCHECK(fallocate(bt->fdData, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, valPointer, VALSIZE) >= 0, STATUS_FALLOCATEERROR, __FILE__, __LINE__);
 }
 
 //写index文件
@@ -222,11 +222,6 @@ static inline void FILE_KEYNODEWRITE(BPTree* bt, BPNode* node)
 
 	lseek(bt->fdIndex, node->selfPointer, SEEK_SET);
 	CONDCHECK(write(bt->fdIndex, tmpWriteStr, length) == length, STATUS_WRERROR, __FILE__, __LINE__);
-	if (node->sizeLW > node->size){
-		off_t offset = node->selfPointer + length;
-		CONDCHECK(fallocate(bt->fdIndex, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, offset, INDEX_PAGESIZE - length) >= 0, STATUS_FALLOCATEERROR, __FILE__, __LINE__);
-	}
-	node->sizeLW = node->size;
 }
 
 //存储的size必然大于等于1
@@ -242,7 +237,6 @@ static inline void FILE_READNODE(BPTree* bt, off_t pointer, BPNode* node)
 	CONDCHECK(read(bt->fdIndex, node->pKey, _size) == _size, STATUS_RDERROR, __FILE__, __LINE__);
 	_size = (node->size + 1) * sizeof(off_t);
 	CONDCHECK(read(bt->fdIndex, node->childPointers, _size) == _size, STATUS_RDERROR, __FILE__, __LINE__);
-	node->sizeLW = node->size;
 }
 
 //释放index文件对应addr空间
@@ -492,9 +486,8 @@ static void insert(BPTree* bt, const void* pKey, const void* pValue)
 
 static inline void __do_balance_erase(BPTree* bt, BPNode** nnode, SqStack* stack_node, SqStack* stack_loc)
 {
-	BPNode* newRoot = NULL, *sbl = NULL;
+	BPNode* sbl = NULL;
 	while(true){
-		puts("++++++++++++++++++");
 		//size满足,结束判断
 		if ((*nnode)->size >= bt->minNC)
 			break;
@@ -508,8 +501,8 @@ static inline void __do_balance_erase(BPTree* bt, BPNode** nnode, SqStack* stack
 				break;
 			}
 			if ((*nnode)->size < 2){
+				ROOTPOINTER = (*nnode)->childPointers[0];
 				FILE_KEYNODERELEASE(bt, *nnode);
-				ROOTPOINTER = newRoot->selfPointer;
 			}
 			break;
 		}
@@ -545,7 +538,7 @@ static inline void __do_balance_erase(BPTree* bt, BPNode** nnode, SqStack* stack
 			}
 		}
 		//向右兄弟借
-		if (!ret && loc + 1 != (*nnode)->size){
+		if (!ret && loc + 1 != parent->size){
 			leftLoc = loc;
 			FILE_READNODE(bt, parent->childPointers[leftLoc + 1], sbl);
 			if (sbl->size > bt->minNC){
@@ -577,16 +570,14 @@ static inline void __do_balance_erase(BPTree* bt, BPNode** nnode, SqStack* stack
 			MOVEFORWARDONESTEP(bt, parent, leftLoc + 1);
 			parent->childPointers[leftLoc] = left->selfPointer;
 			parent->size--;
-			FILE_KEYNODERELEASE(bt, right);
 			FILE_KEYNODEWRITE(bt, left);
+			FILE_KEYNODERELEASE(bt, right);
 			FILE_KEYNODEWRITE(bt, parent);
+			RELEASEBPNODE(nnode);
 		}
-
-		if (newRoot) RELEASEBPNODE(&newRoot);
-		newRoot = left;
+		//下一轮判断
 		*nnode = parent;
 	}
-	if (newRoot) RELEASEBPNODE(&newRoot);
 	if (sbl) RELEASEBPNODE(&sbl);
 }
 

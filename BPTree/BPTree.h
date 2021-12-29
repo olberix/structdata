@@ -20,7 +20,6 @@ typedef struct BPNode{
 	off_t* childPointers;//分配空间size+1,最后一个为next指针
 	off_t selfPointer;//与B树不同,这个初始为-1
 	__keynode_size_t size;//结点关键字数
-	__keynode_size_t sizeLW;//上次写时的size,用来判断是否需要释放页尾空间
 	unsigned char isLeaf;//0为内部结点,1为叶子结点
 }BPNode;
 

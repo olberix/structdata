@@ -8,7 +8,7 @@
 typedef struct TYKEY{
 	int a;
 	double b;
-	// char c[1024];
+	char c[1024];
 }TYKEY;
 
 typedef struct TYVALUE{
@@ -45,20 +45,24 @@ void foreach(const void* pKey, const void* pValue)
 int main(int argc, char const *argv[])
 {
 	BPTree* tree = BPTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "../../bp");
+	// BPTree* tree = BPTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "../../tmpErase/bp");
 
 
 	TYKEY key;
 	TYVALUE val;
 	memcpy(val.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
-	// memcpy(key.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
-	int range = 54;
+	memcpy(key.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
+	int range = 300000;
+	// key.a = 100000;
+	// key.b = 100000.5;
+	// BPTree().at(tree, &key);
 	for (int i = 0; i < range; i += 3){
 		key.a = i;
 		key.b = i + 0.5;
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BPTree().insert(tree, &key, &val);
-		// printf("11111----insert-%d\n", i);
+		printf("11111----insert-%d\n", i);
 	}
 	puts("222222-----**********");
 	for (int i = range - 1; i >= 0; i -= 3){
@@ -67,7 +71,7 @@ int main(int argc, char const *argv[])
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BPTree().insert(tree, &key, &val);
-		// printf("22222----insert-%d\n", i);
+		printf("22222----insert-%d\n", i);
 	}
 	puts("333333-----**********");
 	for (int i = range - 2; i >= 0; i -= 3){
@@ -76,7 +80,7 @@ int main(int argc, char const *argv[])
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BPTree().insert(tree, &key, &val);
-		// printf("33333----insert-%d\n", i);
+		printf("33333----insert-%d\n", i);
 	}
 
 	puts("444444-----**********");
@@ -84,7 +88,7 @@ int main(int argc, char const *argv[])
 		key.a = i;
 		key.b = key.a + 0.5;
 		BPTree().erase(tree, &key);
-		// printf("done-erase--2--%d\n", i);
+		printf("done-erase--2--%d\n", i);
 	}
 	puts("555555-----**********");
 	for (int i = 0; i < range; i=i+2){
@@ -93,21 +97,21 @@ int main(int argc, char const *argv[])
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BPTree().insert(tree, &key, &val);
-		// printf("done-insert--2--%d\n", i);
+		printf("done-insert--2--%d\n", i);
 	}
 
 	for (int i = 0; i < range / 2; i=i+3){
 		key.a = i;
 		key.b = key.a + 0.5;
 		BPTree().erase(tree, &key);
-		// printf("done-erase--3--%d\n", i);
+		printf("done-erase--3--%d\n", i);
 	}
 
 	for (int i = range - 3; i >= range / 2; i=i-3){
 		key.a = i;
 		key.b = key.a + 0.5;
 		BPTree().erase(tree, &key);
-		// printf("done-erase--3--%d\n", i);
+		printf("done-erase--3--%d\n", i);
 	}
 
 	for (int i = 0; i < range; i=i+3){
@@ -116,11 +120,11 @@ int main(int argc, char const *argv[])
 		val.a = 3 * i + 1;
 		val.b = val.a + 0.123;
 		BPTree().insert(tree, &key, &val);
-		// printf("done-insert--3--%d\n", i);
+		printf("done-insert--3--%d\n", i);
 	}
 
-	// BPTree().traverse(tree, foreach);
-	puts("===================");
+	// // BPTree().traverse(tree, foreach);
+	// puts("===================");
 	for(int i = 0; i < range; i++){
 		key.a = i;
 		key.b = key.a + 0.5;
