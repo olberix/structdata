@@ -8,7 +8,7 @@
 typedef struct TYKEY{
 	int a;
 	double b;
-	char c[1024];
+	// char c[1024];
 }TYKEY;
 
 typedef struct TYVALUE{
@@ -51,12 +51,12 @@ int main(int argc, char const *argv[])
 	TYKEY key;
 	TYVALUE val;
 	memcpy(val.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
-	memcpy(key.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
+	// memcpy(key.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
 	int range = 300000;
 	// key.a = 100000;
 	// key.b = 100000.5;
 	// BPTree().at(tree, &key);
-	for (int i = 0; i < range; i += 3){
+	for (int i = 0; i < range; i += 1){
 		key.a = i;
 		key.b = i + 0.5;
 		val.a = 3 * i + 1;
@@ -123,8 +123,8 @@ int main(int argc, char const *argv[])
 		printf("done-insert--3--%d\n", i);
 	}
 
-	// // BPTree().traverse(tree, foreach);
-	// puts("===================");
+	// BPTree().traverse(tree, foreach);
+	puts("===================");
 	for(int i = 0; i < range; i++){
 		key.a = i;
 		key.b = key.a + 0.5;

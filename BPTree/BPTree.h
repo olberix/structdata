@@ -3,18 +3,24 @@
 #include "../common/common.h"
 #include <stdbool.h>
 
+typedef unsigned short __keynode_size_t;
+typedef unsigned short __value_size_t;
 typedef struct BPMetaNode{
-	off_t rootPointer;//根结点指针,这个初始为-1
-	off_t firstPointer;//第一个叶子结点指针,这个初始为-1
+	off_t rootPointer;//根结点指针,初始为-1
+	off_t firstPointer;//第一个叶子结点指针,初始为-1
 	off_t fileSize;//元文件大小
 	size_t keySize;//键大小
 	size_t valSize;//值大小
-	size_t indexBitMapEdge;//索引地址位图结束
-	int metaPageSize;//元文件地址位图分配单位,等于默认内存页大小
-	int indexPageSize;//索引文件结点分配单位,等于默认内存页大小*PAGE_RATE
+	size_t indexBitMapEdge;//位图字节分界,前面为索引文件位图,后面为数据文件位图
+	int metaPageSize;//meta页大小
+	int indexPageSize;//索引页大小
+	int dataPageSize;//数据页大小
+	int dataPageBitBytes;//数据页位图字节数
+	__value_size_t maxDC;//数据页最大行数
+	__keynode_size_t maxNC;//结点最大关键字数
+	__keynode_size_t minNC;//结点最小关键字数
 }BPMetaNode;
 
-typedef unsigned short __keynode_size_t;
 typedef struct BPNode{
 	void* pKey;
 	off_t* childPointers;//分配空间size+1,最后一个为next指针
@@ -26,6 +32,9 @@ typedef struct BPNode{
 typedef bool(*BPKeyCompareFuncT)(const void*, const void*);
 typedef void(*BPForEachFuncT)(const void*, const void*);
 typedef struct BPTree{
+	char META_FILENAME[4096];
+	char INDEX_FILENAME[4096];
+	char DATA_FILENAME[4096];
 	BPMetaNode meta;
 	BPKeyCompareFuncT equalFunc;
 	BPKeyCompareFuncT lessFunc;
@@ -35,8 +44,6 @@ typedef struct BPTree{
 	int fdMeta;
 	int fdIndex;
 	int fdData;
-	__keynode_size_t maxNC;
-	__keynode_size_t minNC;
 }BPTree;
 
 typedef struct BPTreeOp{

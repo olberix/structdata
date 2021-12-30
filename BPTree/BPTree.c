@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <string.h>
+#include <math.h>
 #include "../SqStack/SqStack.h"
 
 //以一个字节整数为索引,记录这个整数从左到右第几个bit位为0
@@ -15,31 +16,35 @@ static const unsigned char bit_index_map[255] = {
 4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,6,6,6,6,7,7,8
 };
 extern int fsync(int);
+extern double ceil(double);
 extern int getpagesize();
-//元文件映射长度,这里映射1G,以索引页4K,key大小取极端值4字节为例,1G映射大约能保存2500w条数据(1G*8/(maxNC+1))
+//元文件映射长度,这里映射1G,以结点最小关键数取极端值2,数据页最大数据行数取极端值1为例,1G映射能保存约57亿条数据(1G*8*2/3)
 #define MMAP_SIZE 1024 * 1024 * 1024
 //索引页大小之内存页大小倍数
-#define PAGE_RATE 1
+#define INDEX_PAGE_RATE 2
+//数据页大小之内存页大小倍数
+#define DATA_PAGE_RATE 2
 #define KEYSIZE (bt->meta.keySize)
 #define VALSIZE (bt->meta.valSize)
 #define META_PAGESIZE (bt->meta.metaPageSize)
 #define INDEX_PAGESIZE (bt->meta.indexPageSize)
+#define DATA_PAGESIZE (bt->meta.dataPageSize)
 #define ROOTPOINTER (bt->meta.rootPointer)
 #define FIRSTPOINTER (bt->meta.firstPointer)
 #define METAFILESIZE (bt->meta.fileSize)
 #define INDEXBITMAPEDGE (bt->meta.indexBitMapEdge)
+#define KEYNODECOUNT_MAX (bt->meta.maxNC)
+#define KEYNODECOUNT_MIN (bt->meta.minNC)
+#define VALUECOUNT_MAX (bt->meta.maxDC)
+#define DATAPAGEBITBYTES (bt->meta.dataPageBitBytes)
 
 #define GETALLFILENAME(path)\
-	char META_FILENAME[4096], INDEX_FILENAME[4096], DATA_FILENAME[4096];\
-	memset(META_FILENAME, 0, 4096);\
-	memset(INDEX_FILENAME, 0, 4096);\
-	memset(DATA_FILENAME, 0, 4096);\
-	strcat(META_FILENAME, path);\
-	strcat(META_FILENAME, ".ccMeta");\
-	strcat(INDEX_FILENAME, path);\
-	strcat(INDEX_FILENAME, ".ccIndex");\
-	strcat(DATA_FILENAME, path);\
-	strcat(DATA_FILENAME, ".ccData");
+	strcat(bt->META_FILENAME, path);\
+	strcat(bt->META_FILENAME, ".ccMeta");\
+	strcat(bt->INDEX_FILENAME, path);\
+	strcat(bt->INDEX_FILENAME, ".ccIndex");\
+	strcat(bt->DATA_FILENAME, path);\
+	strcat(bt->DATA_FILENAME, ".ccData");
 
 //扩展元文件
 static inline void FILE_EXTENDMETA(BPTree* bt)
@@ -57,7 +62,7 @@ static inline bool ISLEAF(BPNode* node)
 //申请新结点
 static inline BPNode* NEWBPNODE(BPTree* bt)
 {
-	__keynode_size_t length = bt->maxNC + 1;//插入时若结点已满先执行插入再执行分解
+	__keynode_size_t length = KEYNODECOUNT_MAX + 1;//插入时若结点已满先执行插入再执行分解
 	POINTCREATE_INIT(BPNode*, node, BPNode, sizeof(BPNode));
 	POINTCREATE(EMPTYDEF, node->childPointers, off_t, sizeof(off_t) * (length + 1));
 	POINTCREATE(EMPTYDEF, node->pKey, void, KEYSIZE * length);
@@ -93,8 +98,7 @@ static inline off_t __apply_valid_value_address(BPTree* bt)
 				else{
 					unsigned char n = bit_index_map[(unsigned char)(*tmp)];
 					idxRoute += n;
-					*tmp |= 1 << (8 - n);
-					return (idxRoute - 1) * VALSIZE;
+					return (idxRoute - 1) * DATA_PAGESIZE;
 				}
 			}
 		}
@@ -130,10 +134,10 @@ static inline off_t __apply_valid_keynode_address(BPTree* bt)
 	}
 }
 
-//data位图索引值置0
+//data位图索引值置0或1
 static inline void __release_value_address(BPTree* bt, off_t addr)
 {
-	long long idxRoute = addr / VALSIZE + 1;
+	long long idxRoute = addr / DATA_PAGESIZE + 1;
 	long long idxByte = idxRoute / 8 + 1;
 	unsigned char idxBit = idxRoute % 8;
 	if (!idxBit){
@@ -174,10 +178,40 @@ static inline void __release_keynode_address(BPTree* bt, off_t addr)
 //写data文件
 static inline off_t FILE_VALUEWRITE(BPTree* bt, const void* pValue)
 {
-	off_t valPointer = __apply_valid_value_address(bt);
-	lseek(bt->fdData, valPointer, SEEK_SET);
-	CONDCHECK(write(bt->fdData, pValue, VALSIZE) == (ssize_t)VALSIZE, STATUS_WRERROR, __FILE__, __LINE__);
-	return valPointer;
+	off_t pagePointer = __apply_valid_value_address(bt);
+	POINTCREATE_INIT(char*, dataStr, char, DATA_PAGESIZE);
+	if (pagePointer < lseek(bt->fdData, 0, SEEK_END)){
+		lseek(bt->fdData, pagePointer, SEEK_SET);
+		CONDCHECK(read(bt->fdData, dataStr, DATA_PAGESIZE) == (ssize_t)DATA_PAGESIZE, STATUS_RDERROR, __FILE__, __LINE__);
+	}
+	__value_size_t size;
+	memcpy(&size, dataStr, sizeof(__value_size_t));
+	unsigned char* edgeStr = dataStr + sizeof(__value_size_t) + DATAPAGEBITBYTES;
+	long long idx = 0;
+	for(unsigned char* tmp = dataStr + sizeof(__value_size_t); tmp < edgeStr; tmp++){
+		if (tmp + 7 < edgeStr && *(unsigned long long*)tmp == 0xFFFFFFFFFFFFFFFF){
+			tmp += 7;
+			idx += 64;
+		}
+		else{
+			if (*tmp == 0xFF)
+				idx += 8;
+			else{
+				unsigned char n = bit_index_map[(unsigned char)(*tmp)];
+				idx += n;
+				*tmp |= 1 << (8 - n);
+			}
+		}
+	}
+	if(++size == VALUECOUNT_MAX)
+		__release_value_address(bt, pagePointer);
+	off_t logicalPointer = sizeof(__value_size_t) + DATAPAGEBITBYTES + (idx - 1) * VALSIZE;
+	memcpy(dataStr + logicalPointer, pValue, VALSIZE);
+	memcpy(dataStr, &size, sizeof(__value_size_t));
+	lseek(bt->fdData, pagePointer, SEEK_SET);
+	CONDCHECK(write(bt->fdData, dataStr, DATA_PAGESIZE) == (ssize_t)DATA_PAGESIZE, STATUS_WRERROR, __FILE__, __LINE__);
+	FREE(dataStr);
+	return pagePointer + logicalPointer;
 }
 
 //重写data文件
@@ -191,22 +225,46 @@ static inline void FILE_VALUECOVER(BPTree* bt, off_t valPointer, const void* pVa
 static inline const void* FILE_READVALUE(BPTree* bt, off_t valPointer)
 {
 	lseek(bt->fdData, valPointer, SEEK_SET);
-	CONDCHECK(read(bt->fdData, bt->tmpRet, VALSIZE) == (ssize_t)VALSIZE, STATUS_WRERROR, __FILE__, __LINE__);
+	CONDCHECK(read(bt->fdData, bt->tmpRet, VALSIZE) == (ssize_t)VALSIZE, STATUS_RDERROR, __FILE__, __LINE__);
 	return bt->tmpRet;
 }
 
-//释放data文件对应valPointer空间
+//释放data文件
 static inline void FILE_VALUERELEASE(BPTree* bt, off_t valPointer)
 {
-	__release_value_address(bt, valPointer);
-	// CONDCHECK(fallocate(bt->fdData, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, valPointer, VALSIZE) >= 0, STATUS_FALLOCATEERROR, __FILE__, __LINE__);
+	long long page = valPointer / DATA_PAGESIZE;
+	off_t pagePointer = page * DATA_PAGESIZE;
+	POINTCREATE_INIT(char*, dataStr, char, DATA_PAGESIZE);
+	lseek(bt->fdData, pagePointer, SEEK_SET);
+	CONDCHECK(read(bt->fdData, dataStr, DATA_PAGESIZE) == (ssize_t)DATA_PAGESIZE, STATUS_RDERROR, __FILE__, __LINE__);
+	long long idx = (valPointer - pagePointer - sizeof(__value_size_t) - DATAPAGEBITBYTES) / VALSIZE + 1;
+	long long bytes = idx / 8 + 1;
+	long long bits = idx % 8;
+	if (!bits){
+		bytes--;
+		bits = 8;
+	}
+	unsigned char* tmp = dataStr + sizeof(__value_size_t) + bytes - 1;
+	*tmp ^= 1 << (8 - bits);
+	__value_size_t size;
+	memcpy(&size, dataStr, sizeof(__value_size_t));
+	if (--size){
+		memcpy(dataStr, &size, sizeof(__value_size_t));
+		lseek(bt->fdData, pagePointer, SEEK_SET);
+		CONDCHECK(write(bt->fdData, dataStr, DATA_PAGESIZE) == (ssize_t)DATA_PAGESIZE, STATUS_WRERROR, __FILE__, __LINE__);
+	}
+	else{
+		__release_value_address(bt, pagePointer);
+		CONDCHECK(fallocate(bt->fdData, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, pagePointer, DATA_PAGESIZE) >= 0, STATUS_FALLOCATEERROR, __FILE__, __LINE__);
+	}
+	FREE(dataStr);
 }
 
 //写index文件
 //存储顺序:isLeaf-size-pKey-childPointers
 static inline void FILE_KEYNODEWRITE(BPTree* bt, BPNode* node)
 {	
-	if (node->size == 0 || node->size > bt->maxNC)//结点最终会释放,合并或分解
+	if (node->size == 0 || node->size > KEYNODECOUNT_MAX)//结点最终会释放,合并或分解
 		return;
 	if (node->selfPointer == -1)
 		node->selfPointer = __apply_valid_keynode_address(bt);
@@ -282,39 +340,54 @@ static BPTree* create(size_t keySize, size_t valSize, BPKeyCompareFuncT equalFun
 	CONDCHECK(keySize > 0 && valSize > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
 	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC, __FILE__, __LINE__);
 
-	GETALLFILENAME(filePath);
-	int flag = access(META_FILENAME, F_OK);
-	CONDCHECK(flag == access(INDEX_FILENAME, F_OK), STATUS_FILEUNMATCHED, __FILE__, __LINE__);
-	CONDCHECK(flag == access(DATA_FILENAME, F_OK), STATUS_FILEUNMATCHED, __FILE__, __LINE__);
-
 	POINTCREATE_INIT(BPTree*, bt, BPTree, sizeof(BPTree));
-	CONDCHECK((bt->fdMeta = open(META_FILENAME, O_RDWR | O_CREAT, 777)) > 0, STATUS_FDERROR, __FILE__, __LINE__);
-	CONDCHECK((bt->fdIndex = open(INDEX_FILENAME, O_RDWR | O_CREAT, 777)) > 0, STATUS_FDERROR, __FILE__, __LINE__);
-	CONDCHECK((bt->fdData = open(DATA_FILENAME, O_RDWR | O_CREAT, 777)) > 0, STATUS_FDERROR, __FILE__, __LINE__);
+	GETALLFILENAME(filePath);
+	int flag = access(bt->META_FILENAME, F_OK);
+	CONDCHECK(flag == access(bt->INDEX_FILENAME, F_OK), STATUS_FILEUNMATCHED, __FILE__, __LINE__);
+	CONDCHECK(flag == access(bt->DATA_FILENAME, F_OK), STATUS_FILEUNMATCHED, __FILE__, __LINE__);
+	CONDCHECK((bt->fdMeta = open(bt->META_FILENAME, O_RDWR | O_CREAT, 777)) > 0, STATUS_FDERROR, __FILE__, __LINE__);
+	CONDCHECK((bt->fdIndex = open(bt->INDEX_FILENAME, O_RDWR | O_CREAT, 777)) > 0, STATUS_FDERROR, __FILE__, __LINE__);
+	CONDCHECK((bt->fdData = open(bt->DATA_FILENAME, O_RDWR | O_CREAT, 777)) > 0, STATUS_FDERROR, __FILE__, __LINE__);
 	CONDCHECK((bt->metaMap = mmap(NULL, MMAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, bt->fdMeta, 0)) != MAP_FAILED, STATUS_MMAPFAILED, __FILE__, __LINE__);
 	if (flag == 0){//文件存在,代表已经创建
 		memcpy(&(bt->meta), bt->metaMap, sizeof(BPMetaNode));
 		CONDCHECK(KEYSIZE == keySize && VALSIZE == valSize, STATUS_SIZEERROR, __FILE__, __LINE__);
-		CONDCHECK(META_PAGESIZE == getpagesize() && INDEX_PAGESIZE == getpagesize() * PAGE_RATE, STATUS_SIZEERROR, __FILE__, __LINE__);
+		CONDCHECK(META_PAGESIZE == getpagesize() && INDEX_PAGESIZE == getpagesize() * INDEX_PAGE_RATE && DATA_PAGESIZE == getpagesize() * DATA_PAGE_RATE, STATUS_SIZEERROR, __FILE__, __LINE__);
 	}
-	else{
+	else{//元信息初始化
+		//键值大小
 		KEYSIZE = keySize;
 		VALSIZE = valSize;
+		//3个文件页大小
 		META_PAGESIZE = getpagesize();
-		INDEX_PAGESIZE = getpagesize() * PAGE_RATE;
+		INDEX_PAGESIZE = getpagesize() * INDEX_PAGE_RATE;
+		DATA_PAGESIZE = getpagesize() * DATA_PAGE_RATE;
+		//指针初始化
 		ROOTPOINTER = FIRSTPOINTER = -1;
+		//数据页最大行数(valSize * x + x / 8 = DATA_PAGESIZE - sizeof(__value_size_t))
+		VALUECOUNT_MAX = (DATA_PAGESIZE - sizeof(__value_size_t)) * 8 / (8 * valSize + 1);
+		CONDCHECK(VALUECOUNT_MAX > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
+		DATAPAGEBITBYTES = ceil(VALUECOUNT_MAX / 8.0f);
+		if (DATAPAGEBITBYTES + valSize * DATAPAGEBITBYTES + sizeof(__value_size_t) > (size_t)DATA_PAGESIZE){
+			VALUECOUNT_MAX--;
+			DATAPAGEBITBYTES++;
+		}
+		CONDCHECK(VALUECOUNT_MAX > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
+		//结点最大最小关键字数
+		KEYNODECOUNT_MAX = (INDEX_PAGESIZE - sizeof(off_t) - sizeof(__keynode_size_t) - sizeof(unsigned char)) / (keySize + sizeof(off_t));
+		__keynode_size_t t = (KEYNODECOUNT_MAX + 1) / 2;
+		CONDCHECK(t >= 2, STATUS_DEERROR, __FILE__, __LINE__);
+		KEYNODECOUNT_MIN = t;
+		//元文件位图分界
+		INDEXBITMAPEDGE = META_PAGESIZE / ((KEYNODECOUNT_MAX + KEYNODECOUNT_MIN) / 2 + VALUECOUNT_MAX) * VALUECOUNT_MAX;
+		//元文件扩展
 		FILE_EXTENDMETA(bt);
 	}
-	bt->maxNC = (INDEX_PAGESIZE - sizeof(off_t) - sizeof(__keynode_size_t) - sizeof(unsigned char)) / (keySize + sizeof(off_t));
-	__keynode_size_t t = (bt->maxNC + 1) / 2;
-	CONDCHECK(t >= 2, STATUS_DEERROR, __FILE__, __LINE__);
-	bt->minNC = t;
-	INDEXBITMAPEDGE = META_PAGESIZE / (1 + bt->maxNC);
+
 	POINTCREATE(EMPTYDEF, bt->tmpRet, void, valSize);
 	POINTCREATE(EMPTYDEF, bt->tmpWriteStr, char, INDEX_PAGESIZE);
 	bt->equalFunc = equalFunc;
 	bt->lessFunc = lessFunc;
-
 	return bt;
 }
 
@@ -389,7 +462,7 @@ static inline BPNode* SPLITNODE(BPTree* bt, BPNode* node)
 static inline void __do_balance_insert(BPTree* bt, BPNode** nnode, SqStack* stack_node, SqStack* stack_loc)
 {
 	while(true){
-		if ((*nnode)->size <= bt->maxNC)
+		if ((*nnode)->size <= KEYNODECOUNT_MAX)
 			break;
 		BPNode* spl = SPLITNODE(bt, *nnode);
 		if (SqStack().empty(stack_node)){//新根节点
@@ -489,7 +562,7 @@ static inline void __do_balance_erase(BPTree* bt, BPNode** nnode, SqStack* stack
 	BPNode* sbl = NULL;
 	while(true){
 		//size满足,结束判断
-		if ((*nnode)->size >= bt->minNC)
+		if ((*nnode)->size >= KEYNODECOUNT_MIN)
 			break;
 		//根结点
 		if (SqStack().empty(stack_node)){
@@ -516,7 +589,7 @@ static inline void __do_balance_erase(BPTree* bt, BPNode** nnode, SqStack* stack
 		if (loc > 0){
 			leftLoc = loc - 1;
 			FILE_READNODE(bt, parent->childPointers[leftLoc], sbl);
-			if (sbl->size > bt->minNC){
+			if (sbl->size > KEYNODECOUNT_MIN){
 				MOVEBACKONESTEP(bt, *nnode, 0);
 				memcpy((*nnode)->pKey, sbl->pKey + KEYSIZE * (sbl->size - 1), KEYSIZE);
 				(*nnode)->childPointers[0] = sbl->childPointers[sbl->size - 1];
@@ -541,7 +614,7 @@ static inline void __do_balance_erase(BPTree* bt, BPNode** nnode, SqStack* stack
 		if (!ret && loc + 1 != parent->size){
 			leftLoc = loc;
 			FILE_READNODE(bt, parent->childPointers[leftLoc + 1], sbl);
-			if (sbl->size > bt->minNC){
+			if (sbl->size > KEYNODECOUNT_MIN){
 				(*nnode)->childPointers[(*nnode)->size + 1] = (*nnode)->childPointers[(*nnode)->size];
 				memcpy((*nnode)->pKey + KEYSIZE * (*nnode)->size, sbl->pKey, KEYSIZE);
 				(*nnode)->childPointers[(*nnode)->size] = sbl->childPointers[0];
