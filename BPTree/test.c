@@ -14,7 +14,7 @@ typedef struct TYKEY{
 typedef struct TYVALUE{
 	int a;
 	double b;
-	char c[1024];
+	// char c[1024];
 	// char c;
 }TYVALUE;
 
@@ -38,8 +38,8 @@ void foreach(const void* pKey, const void* pValue)
 {
 	const TYKEY* key = pKey;
 	const TYVALUE* value = pValue;
-	printf("KEY:a=%d b=%lf\tVALUE:a=%d b=%lf c=%s\n", key->a, key->b, value->a, value->b, value->c);
-	// printf("KEY:a=%d b=%lf\tVALUE:a=%d b=%lf\n", key->a, key->b, value->a, value->b);
+	// printf("KEY:a=%d b=%lf\tVALUE:a=%d b=%lf c=%s\n", key->a, key->b, value->a, value->b, value->c);
+	printf("KEY:a=%d b=%lf\tVALUE:a=%d b=%lf\n", key->a, key->b, value->a, value->b);
 }
 
 int main(int argc, char const *argv[])
@@ -50,9 +50,9 @@ int main(int argc, char const *argv[])
 
 	TYKEY key;
 	TYVALUE val;
-	memcpy(val.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
+	// memcpy(val.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
 	// memcpy(key.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
-	int range = 3000000;
+	int range = 30;
 	// key.a = 100000;
 	// key.b = 100000.5;
 	// BPTree().at(tree, &key);

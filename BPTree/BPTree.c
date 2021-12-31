@@ -232,6 +232,7 @@ static inline const void* FILE_READVALUE(BPTree* bt, off_t valPointer)
 //释放data文件
 static inline void FILE_VALUERELEASE(BPTree* bt, off_t valPointer)
 {
+	puts("1111111");
 	long long page = valPointer / DATA_PAGESIZE;
 	off_t pagePointer = page * DATA_PAGESIZE;
 	POINTCREATE_INIT(char*, dataStr, char, DATA_PAGESIZE);
@@ -368,7 +369,7 @@ static BPTree* create(size_t keySize, size_t valSize, BPKeyCompareFuncT equalFun
 		VALUECOUNT_MAX = (DATA_PAGESIZE - sizeof(__value_size_t)) * 8 / (8 * valSize + 1);
 		CONDCHECK(VALUECOUNT_MAX > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
 		DATAPAGEBITBYTES = ceil(VALUECOUNT_MAX / 8.0f);
-		if (DATAPAGEBITBYTES + valSize * DATAPAGEBITBYTES + sizeof(__value_size_t) > (size_t)DATA_PAGESIZE){
+		if (DATAPAGEBITBYTES + valSize * VALUECOUNT_MAX + sizeof(__value_size_t) > (size_t)DATA_PAGESIZE){
 			VALUECOUNT_MAX--;
 			DATAPAGEBITBYTES++;
 		}
