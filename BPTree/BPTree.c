@@ -547,6 +547,7 @@ static void insert(BPTree* bt, const void* pKey, const void* pValue)
 		node->size++;
 		FILE_KEYNODEWRITE(bt, node);
 		__do_balance_insert(bt, &node, stack_node, stack_loc);
+		bt->meta.rows++;
 	}
 	//释放空间
 	RELEASEBPNODE(&node);
@@ -692,6 +693,7 @@ static void erase(BPTree* bt, const void* pKey)
 			});
 		}
 		__do_balance_erase(bt, &node, stack_node, stack_loc);
+		bt->meta.rows--;
 	}
 	//释放空间
 	RELEASEBPNODE(&node);
@@ -729,6 +731,59 @@ static inline void change(BPTree* bt, const void* pKey, const void* pValue)
 	insert(bt, pKey, pValue);
 }
 
+static unsigned long long rows(BPTree* bt)
+{
+	return bt->meta.rows;
+}
+
+static BPTree* rebuild(BPTree** sbt)
+{
+	BPTree* bt = *sbt;
+	if (FIRSTPOINTER == -1)
+		return bt;
+	char META_FILENAME[4096];
+	char INDEX_FILENAME[4096];
+	char DATA_FILENAME[4096];
+	memcpy(META_FILENAME, bt->META_FILENAME, 4096);
+	memcpy(INDEX_FILENAME, bt->INDEX_FILENAME, 4096);
+	memcpy(DATA_FILENAME, bt->DATA_FILENAME, 4096);
+	unsigned long long __rows = rows(bt);
+	unsigned long long __t_rows = lseek(bt->fdData, 0, SEEK_END) / DATA_PAGESIZE * VALUECOUNT_MAX;
+	char tmpPath[4096];
+	memcpy(tmpPath, META_FILENAME, 4096);
+	memcpy(tmpPath + strlen(tmpPath) - strlen(".ccMeta"), ".tmp\0", 5);
+
+	BPTree* newBt = create(KEYSIZE, VALSIZE, bt->equalFunc, bt->lessFunc, tmpPath);
+	BPNode* node = NEWBPNODE(bt);
+	off_t pointer = FIRSTPOINTER;
+	while(true){
+		FILE_READNODE(bt, pointer, node);
+		for (__keynode_size_t i = 0; i < node->size; i++)
+			insert(newBt, node->pKey + KEYSIZE * i, FILE_READVALUE(bt, node->childPointers[i]));
+		pointer = node->childPointers[node->size];
+		if (pointer == -1)
+			break;
+	}
+	RELEASEBPNODE(&node);
+	destroy(sbt);
+	CONDCHECK(unlink(META_FILENAME) >= 0, STATUS_UNLINKFAILED, __FILE__, __LINE__);
+	CONDCHECK(unlink(INDEX_FILENAME) >= 0, STATUS_UNLINKFAILED, __FILE__, __LINE__);
+	CONDCHECK(unlink(DATA_FILENAME) >= 0, STATUS_UNLINKFAILED, __FILE__, __LINE__);
+	CONDCHECK(rename(newBt->META_FILENAME, META_FILENAME) >= 0, STATUS_RENAMEFAILED, __FILE__, __LINE__);
+	CONDCHECK(rename(newBt->INDEX_FILENAME, INDEX_FILENAME) >= 0, STATUS_RENAMEFAILED, __FILE__, __LINE__);
+	CONDCHECK(rename(newBt->DATA_FILENAME, DATA_FILENAME) >= 0, STATUS_RENAMEFAILED, __FILE__, __LINE__);
+	memcpy(newBt->META_FILENAME, META_FILENAME, 4096);
+	memcpy(newBt->INDEX_FILENAME, INDEX_FILENAME, 4096);
+	memcpy(newBt->DATA_FILENAME, DATA_FILENAME, 4096);
+
+	unsigned long long _rows = rows(newBt);
+	unsigned long long _t_rows = lseek(newBt->fdData, 0, SEEK_END) / DATA_PAGESIZE * VALUECOUNT_MAX;
+	printf("before rebuild, used rows:%ld, total rows:%ld, usage:%.2f%\n", __rows, __t_rows, __rows * 100.0f / __t_rows);
+	printf("after rebuild, used rows:%ld, total rows:%ld, usage:%.2f%\n", _rows, _t_rows, _rows * 100.0f / _t_rows);
+
+	return newBt;
+}
+
 inline const BPTreeOp* GetBPTreeOpStruct()
 {
 	static const BPTreeOp OpList = {
@@ -739,6 +794,8 @@ inline const BPTreeOp* GetBPTreeOpStruct()
 		.erase = erase,
 		.at = at,
 		.change = change,
+		.rows = rows,
+		.rebuild = rebuild,
 	};
 	return &OpList;
 }

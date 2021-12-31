@@ -25,11 +25,14 @@ enum StatusCode{
 	STATUS_RDERROR,
 	STATUS_WRERROR,
 	STATUS_FALLOCATEERROR,
+	STATUS_UNLINKFAILED,
+	STATUS_RENAMEFAILED,
 };
 
 static const char* errStr[] = {
 	"invalid index", "overflow", "no elem", "elem size error", "null function", "degree error", "offset error",
 	"file unmatched", "mmap failed", "file descriptor error", "read error", "write error", "fallocate error",
+	"unlink failed", "rename failed"
 };
 
 #define FREE(p) do{\

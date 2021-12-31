@@ -44,8 +44,8 @@ void foreach(const void* pKey, const void* pValue)
 
 int main(int argc, char const *argv[])
 {
+	// BPTree* tree = BPTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "../../tmpNormal/bp");
 	BPTree* tree = BPTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "../../bp");
-	// BPTree* tree = BPTree().create(sizeof(TYKEY), sizeof(TYVALUE), equalFunc, lessFunc, "../../tmpErase/bp");
 
 
 	TYKEY key;
@@ -56,7 +56,7 @@ int main(int argc, char const *argv[])
 	// key.a = 100000;
 	// key.b = 100000.5;
 	// BPTree().at(tree, &key);
-	for (int i = 0; i < range; i += 1){
+	for (int i = 0; i < range; i += 3){
 		key.a = i;
 		key.b = i + 0.5;
 		val.a = 3 * i + 1;
@@ -123,7 +123,11 @@ int main(int argc, char const *argv[])
 		printf("done-insert--3--%d\n", i);
 	}
 
-	// BPTree().traverse(tree, foreach);
+	// // BPTree().traverse(tree, foreach);
+	tree = BPTree().rebuild(&tree);
+	// tree = BPTree().rebuild(&tree);
+	// tree = BPTree().rebuild(&tree);
+
 	puts("===================");
 	for(int i = 0; i < range; i++){
 		key.a = i;

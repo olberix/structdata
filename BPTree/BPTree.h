@@ -6,6 +6,7 @@
 typedef unsigned short __keynode_size_t;
 typedef unsigned short __value_size_t;
 typedef struct BPMetaNode{
+	unsigned long long rows;//实际数据行数
 	off_t rootPointer;//根结点指针,初始为-1
 	off_t firstPointer;//第一个叶子结点指针,初始为-1
 	off_t fileSize;//元文件大小
@@ -54,6 +55,8 @@ typedef struct BPTreeOp{
 	void (*erase)(BPTree*, const void*);
 	const void* (*at)(BPTree*, const void*);
 	void (*change)(BPTree*, const void*, const void*);
+	unsigned long long (*rows)(BPTree*);
+	BPTree* (*rebuild)(BPTree**);
 }BPTreeOp;
 
 extern const BPTreeOp* GetBPTreeOpStruct();
