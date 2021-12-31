@@ -200,6 +200,7 @@ static inline off_t FILE_VALUEWRITE(BPTree* bt, const void* pValue)
 				unsigned char n = bit_index_map[(unsigned char)(*tmp)];
 				idx += n;
 				*tmp |= 1 << (8 - n);
+				break;
 			}
 		}
 	}
@@ -232,7 +233,6 @@ static inline const void* FILE_READVALUE(BPTree* bt, off_t valPointer)
 //释放data文件
 static inline void FILE_VALUERELEASE(BPTree* bt, off_t valPointer)
 {
-	puts("1111111");
 	long long page = valPointer / DATA_PAGESIZE;
 	off_t pagePointer = page * DATA_PAGESIZE;
 	POINTCREATE_INIT(char*, dataStr, char, DATA_PAGESIZE);
