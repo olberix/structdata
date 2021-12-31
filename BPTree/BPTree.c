@@ -503,6 +503,7 @@ static void insert(BPTree* bt, const void* pKey, const void* pValue)
 		node->childPointers[1] = -1;
 		node->isLeaf = 1;
 		node->size = 1;
+		bt->meta.rows = 1;
 		FILE_KEYNODEWRITE(bt, node);
 		ROOTPOINTER = node->selfPointer;
 		FIRSTPOINTER = node->selfPointer;

@@ -52,7 +52,7 @@ int main(int argc, char const *argv[])
 	TYVALUE val;
 	memcpy(val.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
 	// memcpy(key.c, "abcdefghijklmnopqrstuvwxyz\0", 27);
-	int range = 300000;
+	int range = 3000000;
 	// key.a = 100000;
 	// key.b = 100000.5;
 	// BPTree().at(tree, &key);
