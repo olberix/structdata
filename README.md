@@ -198,3 +198,56 @@ B树插入方法并不唯一，各种方法大同小异，文中实现是采用�
 
 [**参考链接：**]()&nbsp;[什么是B树](https://mp.weixin.qq.com/s/Q29CgcnnudePQ0l2UyshUw)&nbsp;&nbsp;[MySQL背后的数据结构及算法原理](http://blog.codinglabs.org/articles/theory-of-mysql-index.html)&nbsp;&nbsp;[基于外存（磁盘）的B+树实现](https://zhuanlan.zhihu.com/p/67374506)
 ## <span id="8">B+Tree</span>
+```c
+typedef unsigned short __keynode_size_t;
+typedef unsigned short __value_size_t;
+typedef struct BPMetaNode{
+	unsigned long long rows;//实际数据行数
+	off_t rootPointer;//根结点指针,初始为-1
+	off_t firstPointer;//第一个叶子结点指针,初始为-1
+	off_t fileSize;//元文件大小
+	size_t keySize;//键大小
+	size_t valSize;//值大小
+	size_t indexBitMapEdge;//位图字节分界,前面为索引文件位图,后面为数据文件位图
+	int metaPageSize;//meta页大小
+	int indexPageSize;//索引页大小
+	int dataPageSize;//数据页大小
+	int dataPageBitBytes;//数据页位图字节数
+	__value_size_t maxDC;//数据页最大行数
+	__keynode_size_t maxNC;//结点最大关键字数
+	__keynode_size_t minNC;//结点最小关键字数
+}BPMetaNode;
+typedef struct BPNode{
+	void* pKey;
+	off_t* childPointers;//分配空间size+1,最后一个为next指针
+	off_t selfPointer;//与B树不同,这个初始为-1
+	__keynode_size_t size;//结点关键字数
+	unsigned char isLeaf;//0为内部结点,1为叶子结点
+}BPNode;
+typedef bool(*BPKeyCompareFuncT)(const void*, const void*);
+typedef void(*BPForEachFuncT)(const void*, const void*);
+typedef struct BPTree{
+	char META_FILENAME[4096];
+	char INDEX_FILENAME[4096];
+	char DATA_FILENAME[4096];
+	BPMetaNode meta;
+	BPKeyCompareFuncT equalFunc;
+	BPKeyCompareFuncT lessFunc;
+	void* tmpRet;
+	char* tmpWriteStr;
+	char* metaMap;//元文件映射
+	int fdMeta;
+	int fdIndex;
+	int fdData;
+}BPTree;
+```
+这同样是基于外存实现的B+树（非聚簇实现），在上面[B-Tree](#7)的实现中，IO利用率并不理想，这里结合位图的方式，实现了更高的存储效率。同样的，B+树新创建的时候会创建3个文件：元文件，索引文件和数据文件；元文件中，因为其特殊性采用了[mmap](https://www.cnblogs.com/huxiao-tee/p/4660352.html#_labelTop)映射方式进行文件存取，文件起始用一页空间记录B+树的meta信息，剩余空间记录了索引和数据的地址位信息，同样以一页为单位，通过索引页容纳关键字数和数据页容纳数据行数计算出具体的分界a，即前a个字节是索引位图，剩余字节是数据位图；索引文件中，每一页分别记录了是否叶子，关键字数，关键字行，地址行等信息，结点分裂时，通过元文件具体bit位计算出空闲页位置并将bit位置1，结点删除时，将整个索引页打洞归还磁盘空间并将元文件具体bit位置0；数据文件中，每一页分别记录了当前页已用数据行数，数据行位图所占字节，数据行位图和实际的数据行，插入新数据时，通过元文件找到未写满的数据页地址，再通过当前数据位图找到空闲的数据行写入，如果当前页写满，便将元文件对应bit位置1，删除数据后，若整个数据页已经空闲，则打洞当前页，若删除前整页已经写满，则将元文件对应bit位置1，插入和删除操作同样需要更新当前页数据行位图  
+
+![B+Tree](https://github.com/ccencon/structdata/blob/main/images/B+Tree.png)  
+
+B+树与B-树的差异：  
+
++	有n棵子树的结点含有n个关键字，叶子结点会多出一个或者两个指针域指向左右兄弟结点
++	所有叶子结点包含了全部关键字信息，而内部结点仅作索引作用，每个关键字都为其对应子树最大（最小）关键字
++	为了防止B+树出现无意义的单关键字结点，故B+树的结点最小关键字数必须大于等于2，当根结点为叶子结点时根结点不受此约束
++	内部结点和叶子结点计算容纳最大关键字数的方法存在差异（尤其体现在聚簇实现中），所以B+树可以存在两个不同的阶a和b，阶a用于描述内部结点，阶b用于描述叶子结点
