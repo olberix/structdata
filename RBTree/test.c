@@ -135,6 +135,7 @@ int main()
 	// RBTree().clear(tree);
 	// RBTree().level_order_traverse(tree, foreach);
 
+	printf("tree size:%llu------\n", RBTree().size(tree));
 	RBTree().destroy(&tree);
 	return 0;
 }

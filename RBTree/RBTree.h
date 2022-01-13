@@ -29,6 +29,7 @@ typedef struct RBTree{
 	RBKeyCompareFuncT lessFunc;
 	size_t keySize;
 	size_t valSize;
+	size_t tree_size;
 }RBTree;
 
 typedef struct RBTreeOp{
@@ -41,6 +42,7 @@ typedef struct RBTreeOp{
 	void (*erase)(RBTree*, const void*);
 	const void* (*at)(RBTree*, const void*);
 	void (*change)(RBTree*, const void*, const void*);
+	size_t (*size)(RBTree*);
 }RBTreeOp;
 
 extern const RBTreeOp* GetRBTreeOpStruct();

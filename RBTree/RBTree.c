@@ -185,6 +185,7 @@ static void insert(RBTree* tree, const void* pKey, const void* pValue)
 		ROOTCREATE(tree, newRoot, pKey, pValue);
 		root = tree->root = newRoot;
 		root->color = RB_BLACK;
+		tree->tree_size = 1;
 		return;
 	}
 	while(true){
@@ -200,6 +201,7 @@ static void insert(RBTree* tree, const void* pKey, const void* pValue)
 				root->lchild = newRoot;
 				newRoot->parent = root;
 				do_balance_insert(tree, newRoot);
+				tree->tree_size++;
 				return;
 			}
 		}
@@ -211,6 +213,7 @@ static void insert(RBTree* tree, const void* pKey, const void* pValue)
 				root->rchild = newRoot;
 				newRoot->parent = root;
 				do_balance_insert(tree, newRoot);
+				tree->tree_size++;
 				return;
 			}
 		}
@@ -350,6 +353,7 @@ static void erase(RBTree* tree, const void* pKey)
 			else
 				rlc = root;
 			do_balance_erase(tree, rlc);
+			tree->tree_size--;
 			RELEASENODE(rlc);
 			return;
 		}
@@ -379,6 +383,11 @@ void change(RBTree* tree, const void* pKey, const void* pValue)
 	insert(tree, pKey, pValue);
 }
 
+static inline size_t size(RBTree* tree)
+{
+	return tree->tree_size;
+}
+
 inline const RBTreeOp* GetRBTreeOpStruct()
 {
 	static const RBTreeOp OpList = {
@@ -391,6 +400,7 @@ inline const RBTreeOp* GetRBTreeOpStruct()
 		.erase = erase,
 		.at = at,
 		.change = change,
+		.size = size,
 	};
 	return &OpList;
 }

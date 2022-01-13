@@ -21,6 +21,7 @@ typedef struct AVLTree{
 	AVLKeyCompareFuncT lessFunc;
 	size_t keySize;
 	size_t valSize;
+	size_t tree_size;
 }AVLTree;
 
 typedef struct AVLTreeOp{
@@ -40,6 +41,7 @@ typedef struct AVLTreeOp{
 	void (*erase)(AVLTree*, const void*);
 	const void* (*at)(AVLTree*, const void*);
 	void (*change)(AVLTree*, const void*, const void*);
+	size_t (*size)(AVLTree*);
 }AVLTreeOp;
 
 extern const AVLTreeOp* GetAVLTreeOpStruct();

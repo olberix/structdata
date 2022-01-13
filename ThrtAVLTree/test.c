@@ -42,7 +42,7 @@ int main()
 	AVLTree* tree = AVLTree().create(sizeof(KEY), sizeof(VALUE), key_equal, key_less);
 	KEY key;
 	VALUE val;
-	for (size_t i = 0; i < 50; i++){
+	for (size_t i = 0; i < 7; i++){
 		key.a = rand()%100;
 		key.b = rand()%100 + 0.25;
 		val.a = rand()%100;
@@ -52,6 +52,10 @@ int main()
 		if(key.a%2 == 0 || key.a%3==0 || key.a %5==0 || key.a%7==0)
 			AVLTree().erase(tree, &key);
 	}
+	printf("%s\n", "===============================");
+	AVLTree().level_order_traverse(tree, foreach);
+	printf("tree size:%llu------\n", AVLTree().size(tree));
+
 	// AVLTree().clear(tree);
 	int arry[] = {2,8,10,15,25,27,32,50,55,60,78,80,455,421,566,43,44,224,3,45,64,4,21,41,54,5};
 	for (size_t i = 0; i < sizeof(arry) / sizeof(int); i++){
@@ -59,10 +63,14 @@ int main()
 		val.a = arry[i];
 		AVLTree().insert(tree, &key, &val);
 	}
+	printf("tree size:%llu------\n", AVLTree().size(tree));
+
 	for (size_t i = sizeof(arry) / sizeof(int) - 1; i >=5; i--){
 		key.a = arry[i];
 		AVLTree().erase(tree, &key);
 	}
+	printf("tree size:%llu------\n", AVLTree().size(tree));
+
 	key.a = 10;
 	val.a = 10555;
 	AVLTree().change(tree, &key, &val);
@@ -100,6 +108,7 @@ int main()
 	AVLTree().level_order_traverse(tree, foreach);
 	printf("%s\n", "===============================");
 	AVLTree().in_order_traverse_thrt(tree, foreach);
+	printf("tree size:%llu------\n", AVLTree().size(tree));
 	AVLTree().destroy(&tree);
 	return 0;
 }

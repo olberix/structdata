@@ -364,6 +364,7 @@ static void insert(AVLTree* tree, const void* pKey, const void* pValue)
 		root->lchild = root->rchild = &(tree->thrtHead);
 		root->ThrtFlag = 0x3;
 		tree->thrtHead.lchild = tree->thrtHead.rchild = root;
+		tree->tree_size = 1;
 		return;
 	}
 	SqStack* stack = SqStack().create(sizeof(AVLNode*), NULL);/*记录访问路径*/
@@ -380,6 +381,7 @@ static void insert(AVLTree* tree, const void* pKey, const void* pValue)
 				ROOTCREATE(tree, newRoot, pKey, pValue);
 				insert_left_child(root, newRoot);
 				do_balance_insert(stack, tree, pKey);
+				tree->tree_size++;
 				break;
 			}
 		}
@@ -390,6 +392,7 @@ static void insert(AVLTree* tree, const void* pKey, const void* pValue)
 				ROOTCREATE(tree, newRoot, pKey, pValue);
 				insert_right_child(root, newRoot);
 				do_balance_insert(stack, tree, pKey);
+				tree->tree_size++;
 				break;
 			}
 		}
@@ -540,6 +543,7 @@ static void erase(AVLTree* tree, const void* pKey)
 					do_balance_erase(stack, tree);
 				}
 			}
+			tree->tree_size--;
 			break;
 		}
 		if (tree->lessFunc(root->pKey, pKey)){
@@ -581,6 +585,11 @@ void change(AVLTree* tree, const void* pKey, const void* pValue)
 	insert(tree, pKey, pValue);
 }
 
+static inline size_t size(AVLTree* tree)
+{
+	return tree->tree_size;
+}
+
 inline const AVLTreeOp* GetAVLTreeOpStruct()
 {
 	static const AVLTreeOp OpList = {
@@ -600,6 +609,7 @@ inline const AVLTreeOp* GetAVLTreeOpStruct()
 		.erase = erase,
 		.at = at,
 		.change = change,
+		.size = size,
 	};
 	return &OpList;
 }
