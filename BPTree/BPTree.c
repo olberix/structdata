@@ -733,7 +733,7 @@ static inline void change(BPTree* bt, const void* pKey, const void* pValue)
 	insert(bt, pKey, pValue);
 }
 
-static unsigned long long rows(BPTree* bt)
+static inline size_t rows(BPTree* bt)
 {
 	return bt->meta.rows;
 }

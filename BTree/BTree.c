@@ -530,7 +530,7 @@ static const void* at(BTree* bt, const void* pKey)
 	}while(true);
 }
 
-static void change(BTree* bt, const void* pKey, const void* pValue)
+static inline void change(BTree* bt, const void* pKey, const void* pValue)
 {
 	insert(bt, pKey, pValue);
 }

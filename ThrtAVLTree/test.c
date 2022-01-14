@@ -52,9 +52,6 @@ int main()
 		if(key.a%2 == 0 || key.a%3==0 || key.a %5==0 || key.a%7==0)
 			AVLTree().erase(tree, &key);
 	}
-	printf("%s\n", "===============================");
-	AVLTree().level_order_traverse(tree, foreach);
-	printf("tree size:%llu------\n", AVLTree().size(tree));
 
 	// AVLTree().clear(tree);
 	int arry[] = {2,8,10,15,25,27,32,50,55,60,78,80,455,421,566,43,44,224,3,45,64,4,21,41,54,5};

@@ -531,6 +531,7 @@ static void erase(AVLTree* tree, const void* pKey)
 					parent = TOCONSTANT(AVLNode*, SqStack().get_top(stack));
 				delete_leaf_node(tree, root, parent);
 				do_balance_erase(stack, tree);
+				tree->tree_size--;
 			}
 			else{
 				if (L_CHILD(root) && R_CHILD(root))
@@ -541,9 +542,9 @@ static void erase(AVLTree* tree, const void* pKey)
 						parent = TOCONSTANT(AVLNode*, SqStack().get_top(stack));
 					delete_single_node(tree, root, parent);
 					do_balance_erase(stack, tree);
+					tree->tree_size--;
 				}
 			}
-			tree->tree_size--;
 			break;
 		}
 		if (tree->lessFunc(root->pKey, pKey)){
