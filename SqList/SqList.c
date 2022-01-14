@@ -15,6 +15,11 @@ static SqList* create(size_t ESize, const size_t* pLSize)
 	return ret;
 }
 
+static inline void mem_init(SqList* pList)
+{
+	memset(pList->pElems, 0, pList->size * pList->e_S);
+}
+
 static inline void destroy(SqList** ppList)
 {
 	FREE((*ppList)->pElems);
@@ -160,6 +165,7 @@ inline const SqListOp* GetSqListOpStruct()
 		.r_for_each = r_for_each,
 		.reverse = reverse,
 		.sort = sort,
+		.mem_init = mem_init,
 	};
 	return &OpList;
 }
