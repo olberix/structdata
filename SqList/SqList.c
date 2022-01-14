@@ -3,7 +3,6 @@
 
 static SqList* create(size_t ESize, const size_t* pLSize)
 {
-	CONDCHECK(ESize > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
 	POINTCREATE(SqList*, ret, SqList, sizeof(SqList));
 	size_t _size = INIT_SIZE;
 	if (pLSize)

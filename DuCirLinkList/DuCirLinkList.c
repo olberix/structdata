@@ -3,7 +3,6 @@
 
 static DuCirLinkList* create(size_t ESize)
 {
-	CONDCHECK(ESize > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
 	POINTCREATE(DuCirLinkList*, ret, DuCirLinkList, sizeof(DuCirLinkList));
 	POINTCREATE(EMPTYDEF, ret->tmpRet, void, ESize);
 	POINTCREATE_INIT(EMPTYDEF, HEAD(ret), DuCirLink, sizeof(DuCirLink));

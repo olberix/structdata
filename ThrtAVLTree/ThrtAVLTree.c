@@ -13,7 +13,6 @@
 
 static AVLTree* create(size_t keySize, size_t valSize, AVLKeyCompareFuncT equalFunc, AVLKeyCompareFuncT lessFunc)
 {
-	CONDCHECK(keySize > 0 && valSize > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
 	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC, __FILE__, __LINE__);
 	size_t tr_s = sizeof(AVLTree);
 	POINTCREATE_INIT(AVLTree*, ret, AVLTree, tr_s);
