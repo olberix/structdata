@@ -23,6 +23,7 @@ enum StatusCode{
 	STATUS_OFFSETERROR,
 	STATUS_FILEUNMATCHED,
 	STATUS_MMAPFAILED,
+	STATUS_INVALIDBUCKETTYPE,
 
 	STATUS_FDERROR,
 	STATUS_RDERROR,
@@ -34,7 +35,7 @@ enum StatusCode{
 
 static const char* errStr[] = {
 	"invalid index", "overflow", "no elem", "elem size error", "null function", "degree error", "offset error",
-	"file unmatched", "mmap failed", "file descriptor error", "read error", "write error", "fallocate error",
+	"file unmatched", "mmap failed", "invalid bucket type", "file descriptor error", "read error", "write error", "fallocate error",
 	"unlink failed", "rename failed"
 };
 
