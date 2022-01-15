@@ -5,10 +5,10 @@
 #include "../RBTree/RBTree.h"
 #include "../DuCirLinkList/DuCirLinkList.h"
 
-static const unsigned char BUCKETTYPE_NIL = 0x0;
-static const unsigned char BUCKETTYPE_ORIGIN = 0x1;
-static const unsigned char BUCKETTYPE_LIST = 0x2;
-static const unsigned char BUCKETTYPE_RBTREE = 0x3;
+#define BUCKETTYPE_NIL 0x0
+#define BUCKETTYPE_ORIGIN 0x1
+#define BUCKETTYPE_LIST 0x2
+#define BUCKETTYPE_RBTREE 0x3
 
 static const size_t HASHINITSIZE = 8;//哈希表初始长度
 static const size_t TRANSTOTREESIZE = 6;//链表转化为红黑树的元素个数
@@ -29,15 +29,12 @@ typedef struct HashBucket{
 	unsigned char type;
 }HashBucket;
 
-typedef size_t(*HashCodeFuncT)(const unsigned char*, size_t);
-typedef bool(*HKeyCompareFuncT)(const void*, const void*);
-typedef void(*HashForEachFuncT)(const void*, void*);
 typedef struct HashTable{
 	SqList* list;
 	void* tmpRet;
-	HashCodeFuncT hashFunc;
-	HKeyCompareFuncT lessFunc;
-	HKeyCompareFuncT equalFunc;
+	HashFuncTT hashFunc;
+	CmnCompareFunc lessFunc;
+	CmnCompareFunc equalFunc;
 	size_t keySize;
 	size_t valSize;
 	size_t table_size;
@@ -45,10 +42,10 @@ typedef struct HashTable{
 }HashTable;
 
 typedef struct HashTableOp{
-	HashTable* (*create)(size_t, size_t, HashCodeFuncT, HKeyCompareFuncT, HKeyCompareFuncT);
+	HashTable* (*create)(size_t, size_t, HashFuncTT, CmnCompareFunc, CmnCompareFunc);
 	void (*clear)(HashTable*);
 	void (*destroy)(HashTable**);
-	void (*for_each)(HashTable*, HashForEachFuncT);
+	void (*for_each)(HashTable*, UnorderedForEachFunc_Mutable, void*);
 	void (*insert)(HashTable*, const void*, const void*);
 	void (*erase)(HashTable*, const void*);
 	const void* (*at)(HashTable*, const void*);
