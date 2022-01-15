@@ -14,8 +14,6 @@ typedef struct SqList{
 	size_t size;
 }SqList;
 
-typedef void(*SqlFEFuncT)(size_t, void*);
-typedef bool(*SqlCmpFuncT)(const void*, const void*);
 typedef struct SqListOp{
 	SqList* (*create)(size_t, const size_t*);
 	void (*destroy)(SqList**);
@@ -26,10 +24,10 @@ typedef struct SqListOp{
 	const void* (*erase)(SqList*, size_t);
 	const void* (*at)(SqList*, size_t);
 	size_t (*length)(SqList*);
-	void (*for_each)(SqList*, SqlFEFuncT);
-	void (*r_for_each)(SqList*, SqlFEFuncT);/*forward*/
+	void (*for_each)(SqList*, SequenceForEachFunc_Mutable, void*);
+	void (*r_for_each)(SqList*, SequenceForEachFunc_Mutable, void*);/*forward*/
 	void (*reverse)(SqList*);
-	void (*sort)(SqList*, SqlCmpFuncT);
+	void (*sort)(SqList*, CmnCompareFunc);
 	void (*mem_init)(SqList*);
 }SqListOp;
 

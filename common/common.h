@@ -129,4 +129,11 @@ extern size_t default_hash_func_int64(const void*);
 extern size_t default_hash_func_uint64(const void*);
 extern size_t default_hash_func_string(const void*);
 
+typedef void(*SequenceForEachFunc_Mutable)(size_t, void*, void*);
+typedef void(*SequenceForEachFunc_Const)(size_t, const void*, void*);
+typedef void(*UnorderedForEachFunc_Mutable)(const void*, void*, void*);
+typedef void(*UnorderedForEachFunc_Const)(const void*, const void*, void*);
+
+typedef bool(*CmnCompareFunc)(const void*, const void*);
+
 #endif

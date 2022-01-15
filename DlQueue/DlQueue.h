@@ -13,7 +13,7 @@ typedef struct DlQueueOp{
 	const void* (*pop)(DlQueue*);
 	void (*push)(DlQueue*, const void*);
 	bool (*empty)(DlQueue*);
-	void (*for_each)(DlQueue*, DucLFEFuncT);
+	void (*for_each)(DlQueue*, SequenceForEachFunc_Mutable, void*);
 	const void* (*at)(DlQueue*, size_t);
 }DlQueueOp;
 

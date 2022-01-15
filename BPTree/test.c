@@ -34,7 +34,7 @@ bool lessFunc(const void* lh, const void* rh)
 	return _rh->a < _lh->a;
 }
 
-void foreach(const void* pKey, const void* pValue)
+void foreach(const void* pKey, const void* pValue, void* args)
 {
 	const TYKEY* key = pKey;
 	const TYVALUE* value = pValue;
@@ -123,7 +123,7 @@ int main(int argc, char const *argv[])
 		printf("done-insert--3--%d\n", i);
 	}
 
-	// // BPTree().traverse(tree, foreach);
+	// BPTree().traverse(tree, foreach, NULL);
 	tree = BPTree().rebuild(&tree);
 	// tree = BPTree().rebuild(&tree);
 	// tree = BPTree().rebuild(&tree);

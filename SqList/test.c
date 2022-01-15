@@ -6,13 +6,13 @@ typedef struct StA{
 	double b;
 }StA;
 
-void display(size_t key, void* elem)
+void display(size_t key, void* elem, void* args)
 {
 	StA* tmp = (StA*)elem;
 	printf("[%d]\t%d\t%lf\n", key, tmp->a, tmp->b);
 }
 
-void multi(size_t key, void* elem)
+void multi(size_t key, void* elem, void* args)
 {
 	StA* tmp = (StA*)elem;
 	tmp->a *= 10;
@@ -33,7 +33,7 @@ int main()
 	SqList* list = SqList().create(sizeof(StA), NULL);
 	StA tmp = {10, 220.3};
 	SqList().push_back(list, &tmp);
-	SqList().r_for_each(list, &multi);
+	SqList().r_for_each(list, &multi, NULL);
 	SqList().erase(list, 0);
 	srand(time(0));
 	for (int i = 0; i < 50; i++){
@@ -43,13 +43,13 @@ int main()
 		SqList().push_back(list, &tmp);
 		SqList().reverse(list);
 	}
-	// SqList().for_each(list, &display);
+	// SqList().for_each(list, &display, NULL);
 	SqList().reverse(list);
 	puts("++++++++++++++++++++++++++++++++");
-	// SqList().for_each(list, &display);
+	// SqList().for_each(list, &display, NULL);
 	puts("++++++++++++++++++++++++++++++++");
 	SqList().sort(list, &cmp);
-	// SqList().for_each(list, &display);
+	// SqList().for_each(list, &display, NULL);
 	puts("++++++++++++++++++++++++++++++++");
 	SQLIST_FOREACH(list, StA, {
 		printf("[%d]\t%d\t%lf\n", key, value.a, value.b);

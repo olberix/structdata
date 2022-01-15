@@ -33,9 +33,9 @@ static inline bool empty(DlQueue* queue)
 	return DucList().length(queue->list) == 0;
 }
 
-static inline void for_each(DlQueue* queue, DucLFEFuncT func)
+static inline void for_each(DlQueue* queue, SequenceForEachFunc_Mutable func, void* args)
 {
-	DucList().for_each(queue->list, func);
+	DucList().for_each(queue->list, func, args);
 }
 
 static inline const void* at(DlQueue* queue, size_t loc)

@@ -30,7 +30,7 @@ bool key_less(const void* lhs, const void* rhs)
 	return _rhs->a < _lhs->a;
 }
 
-void foreach(const void* key, void* val)
+void foreach(const void* key, void* val, void* args)
 {
 	const KEY* _key = key;
 	const VALUE* _val = val;
@@ -51,13 +51,13 @@ int main()
 	// 	RBTree().insert(tree, &key, &val);
 	// }
 	// puts("=========================");
-	// RBTree().level_order_traverse(tree, foreach);
+	// RBTree().level_order_traverse(tree, foreach, NULL);
 
 	// puts("=========================");
 	// key.a = 83;
 	// key.b = 86.25;
 	// RBTree().erase(tree, &key);
-	// RBTree().level_order_traverse(tree, foreach);
+	// RBTree().level_order_traverse(tree, foreach, NULL);
 
 	// int arry[] = {2,8,10,15,25,27,32,50,55,60,78,80,455,421,566,43,44,224,3,45,64,4,21,41,54,5};
 	// int arry[] = {2,8,10,15,25,27};
@@ -85,7 +85,7 @@ int main()
 		RBTree().insert(tree, &key, &val);
 	}
 	// puts("=========================");
-	// RBTree().level_order_traverse(tree, foreach);
+	// RBTree().level_order_traverse(tree, foreach, NULL);
 
 	int ssss[] = {537,740,251,226,782,159,866,45,902,355,898,55,80,435,181,594,566,778,263,516,25,749,880,138,381,717,299,
 		513,861,713,412,249,382,931,666,59,455,926,141,96,37,862,525,422,328,33,852,354,261,293,563,234,673,305,213,390,558,
@@ -128,12 +128,12 @@ int main()
 	}
 
 	puts("=========================");
-	RBTree().level_order_traverse(tree, foreach);
+	RBTree().level_order_traverse(tree, foreach, NULL);
 	puts("=========================");
-	RBTree().traverse(tree, foreach);
+	RBTree().traverse(tree, foreach, NULL);
 	// puts("=========================");
 	// RBTree().clear(tree);
-	// RBTree().level_order_traverse(tree, foreach);
+	// RBTree().level_order_traverse(tree, foreach, NULL);
 
 	printf("tree size:%llu------\n", RBTree().size(tree));
 	RBTree().destroy(&tree);

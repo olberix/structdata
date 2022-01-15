@@ -336,7 +336,7 @@ static inline void MOVEFORWARDONESTEP(BPTree* bt, BPNode* node, __keynode_size_t
 		node->childPointers[loc - 1] = node->childPointers[loc];
 }
 
-static BPTree* create(size_t keySize, size_t valSize, BPKeyCompareFuncT equalFunc, BPKeyCompareFuncT lessFunc, const char* filePath)
+static BPTree* create(size_t keySize, size_t valSize, CmnCompareFunc equalFunc, CmnCompareFunc lessFunc, const char* filePath)
 {
 	CONDCHECK(keySize > 0 && valSize > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
 	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC, __FILE__, __LINE__);
@@ -408,7 +408,7 @@ static inline void destroy(BPTree** sbt)
 	FREE(*sbt);
 }
 
-static void traverse(BPTree* bt, BPForEachFuncT func)
+static void traverse(BPTree* bt, UnorderedForEachFunc_Const func, void* args)
 {
 	if (FIRSTPOINTER == -1)
 		return;
@@ -417,7 +417,7 @@ static void traverse(BPTree* bt, BPForEachFuncT func)
 	while(true){
 		FILE_READNODE(bt, pointer, node);
 		for (__keynode_size_t i = 0; i < node->size; i++)
-			func(node->pKey + KEYSIZE * i, FILE_READVALUE(bt, node->childPointers[i]));
+			func(node->pKey + KEYSIZE * i, FILE_READVALUE(bt, node->childPointers[i]), args);
 		pointer = node->childPointers[node->size];
 		if (pointer == -1)
 			break;

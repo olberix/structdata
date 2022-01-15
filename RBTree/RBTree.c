@@ -10,7 +10,7 @@
 	memcpy((root)->pKey, pKey, (tree)->keySize);\
 	memcpy((root)->pValue, pValue, (tree)->valSize);
 
-static RBTree* create(size_t keySize, size_t valSize, RBKeyCompareFuncT equalFunc, RBKeyCompareFuncT lessFunc)
+static RBTree* create(size_t keySize, size_t valSize, CmnCompareFunc equalFunc, CmnCompareFunc lessFunc)
 {
 	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC, __FILE__, __LINE__);
 	size_t tr_s = sizeof(RBTree);
@@ -43,7 +43,7 @@ static inline void destroy(RBTree** stree)
 }
 
 /*层级遍历*/
-static void level_order_traverse(RBTree* tree, RBForEachFuncT func)
+static void level_order_traverse(RBTree* tree, UnorderedForEachFunc_Mutable func, void* args)
 {
 	RBNode* root = tree->root;
 	ROOTCHECK(root);
@@ -51,7 +51,7 @@ static void level_order_traverse(RBTree* tree, RBForEachFuncT func)
 	DlQueue().push(queue, &root);
 	while(!DlQueue().empty(queue)){
 		root = TOCONSTANT(RBNode*, DlQueue().pop(queue));
-		func(root->pKey, root->pValue);
+		func(root->pKey, root->pValue, args);
 #ifdef DEBUG
 		printf("%d\n", root->color);
 #endif
@@ -66,7 +66,7 @@ static void level_order_traverse(RBTree* tree, RBForEachFuncT func)
 }
 
 /*中序栈遍历*/
-static inline void traverse(RBTree* tree, RBForEachFuncT func)
+static inline void traverse(RBTree* tree, UnorderedForEachFunc_Mutable func, void* args)
 {
 	RBNode* root = tree->root;
 	ROOTCHECK(root);
@@ -78,7 +78,7 @@ static inline void traverse(RBTree* tree, RBForEachFuncT func)
 		}
 		else{
 			root = TOCONSTANT(RBNode*, SqStack().pop(stack));
-			func(root->pKey, root->pValue);
+			func(root->pKey, root->pValue, args);
 			root = root->rchild;
 		}
 	}

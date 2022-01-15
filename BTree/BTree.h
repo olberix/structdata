@@ -18,12 +18,10 @@ typedef struct BNode{
 	ssize_t size;
 }BNode;
 
-typedef bool(*BKeyCompareFuncT)(const void*, const void*);
-typedef void(*BForEachFuncT)(const void*, const void*);
 typedef struct BTree{
 	HeaderNode head;
-	BKeyCompareFuncT equalFunc;
-	BKeyCompareFuncT lessFunc;
+	CmnCompareFunc equalFunc;
+	CmnCompareFunc lessFunc;
 	void* tmpRet;
 	int fd;
 	unsigned short maxNC;
@@ -31,10 +29,10 @@ typedef struct BTree{
 }BTree;
 
 typedef struct BTreeOp{
-	BTree* (*create)(size_t, size_t, BKeyCompareFuncT, BKeyCompareFuncT, const char*);
+	BTree* (*create)(size_t, size_t, CmnCompareFunc, CmnCompareFunc, const char*);
 	void (*destroy)(BTree**);
-	void (*level_order_traverse)(BTree*, BForEachFuncT);
-	void (*traverse)(BTree*, BForEachFuncT);
+	void (*level_order_traverse)(BTree*, UnorderedForEachFunc_Const, void*);
+	void (*traverse)(BTree*, UnorderedForEachFunc_Const, void*);
 	void (*insert)(BTree*, const void*, const void*);
 	void (*erase)(BTree*, const void*);
 	const void* (*at)(BTree*, const void*);

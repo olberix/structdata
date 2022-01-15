@@ -30,7 +30,7 @@ bool key_less(const void* lhs, const void* rhs)
 	return _rhs->a < _lhs->a;
 }
 
-void foreach(const void* key, void* val)
+void foreach(const void* key, void* val, void* args)
 {
 	const KEY* _key = key;
 	const VALUE* _val = val;
@@ -93,18 +93,18 @@ int main()
 	// val.a = 288;
 	// AVLTree().insert(tree, &key, &val);
 	// printf("%s\n", "===============================");
-	// AVLTree().pre_order_traverse(tree, foreach);
-	// AVLTree().pre_order_traverse_st(tree, foreach);
+	// AVLTree().pre_order_traverse(tree, foreach, NULL);
+	// AVLTree().pre_order_traverse_st(tree, foreach, NULL);
 	// printf("%s\n", "===============================");
-	// AVLTree().in_order_traverse(tree, foreach);
-	// AVLTree().in_order_traverse_st(tree, foreach);
+	// AVLTree().in_order_traverse(tree, foreach, NULL);
+	// AVLTree().in_order_traverse_st(tree, foreach, NULL);
 	// printf("%s\n", "===============================");
-	// AVLTree().post_order_traverse(tree, foreach);
-	// AVLTree().post_order_traverse_st(tree, foreach);
+	// AVLTree().post_order_traverse(tree, foreach, NULL);
+	// AVLTree().post_order_traverse_st(tree, foreach, NULL);
 	printf("%s\n", "===============================");
-	AVLTree().level_order_traverse(tree, foreach);
+	AVLTree().level_order_traverse(tree, foreach, NULL);
 	printf("%s\n", "===============================");
-	AVLTree().in_order_traverse_thrt(tree, foreach);
+	AVLTree().in_order_traverse_thrt(tree, foreach, NULL);
 	printf("tree size:%llu------\n", AVLTree().size(tree));
 	AVLTree().destroy(&tree);
 	return 0;

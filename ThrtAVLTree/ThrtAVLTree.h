@@ -12,31 +12,29 @@ typedef struct AVLNode{
 	unsigned char ThrtFlag;
 }AVLNode;
 
-typedef bool(*AVLKeyCompareFuncT)(const void*, const void*);
-typedef void(*AVLForEachFuncT)(const void*, void*);
 typedef struct AVLTree{
 	AVLNode* root;
 	AVLNode thrtHead;
-	AVLKeyCompareFuncT equalFunc;
-	AVLKeyCompareFuncT lessFunc;
+	CmnCompareFunc equalFunc;
+	CmnCompareFunc lessFunc;
 	size_t keySize;
 	size_t valSize;
 	size_t tree_size;
 }AVLTree;
 
 typedef struct AVLTreeOp{
-	AVLTree* (*create)(size_t, size_t, AVLKeyCompareFuncT, AVLKeyCompareFuncT);
+	AVLTree* (*create)(size_t, size_t, CmnCompareFunc, CmnCompareFunc);
 	void (*clear)(AVLTree*);
 	void (*destroy)(AVLTree**);
-	void (*pre_order_traverse)(AVLTree*, AVLForEachFuncT);
-	void (*in_order_traverse)(AVLTree*, AVLForEachFuncT);
-	void (*post_order_traverse)(AVLTree*, AVLForEachFuncT);
-	void (*pre_order_traverse_st)(AVLTree*, AVLForEachFuncT);
-	void (*in_order_traverse_st)(AVLTree*, AVLForEachFuncT);
-	void (*post_order_traverse_st)(AVLTree*, AVLForEachFuncT);
-	void (*in_order_traverse_thrt)(AVLTree*, AVLForEachFuncT);
-	void (*level_order_traverse)(AVLTree*, AVLForEachFuncT);
-	void (*traverse)(AVLTree*, AVLForEachFuncT);
+	void (*pre_order_traverse)(AVLTree*, UnorderedForEachFunc_Mutable, void*);
+	void (*in_order_traverse)(AVLTree*, UnorderedForEachFunc_Mutable, void*);
+	void (*post_order_traverse)(AVLTree*, UnorderedForEachFunc_Mutable, void*);
+	void (*pre_order_traverse_st)(AVLTree*, UnorderedForEachFunc_Mutable, void*);
+	void (*in_order_traverse_st)(AVLTree*, UnorderedForEachFunc_Mutable, void*);
+	void (*post_order_traverse_st)(AVLTree*, UnorderedForEachFunc_Mutable, void*);
+	void (*in_order_traverse_thrt)(AVLTree*, UnorderedForEachFunc_Mutable, void*);
+	void (*level_order_traverse)(AVLTree*, UnorderedForEachFunc_Mutable, void*);
+	void (*traverse)(AVLTree*, UnorderedForEachFunc_Mutable, void*);
 	void (*insert)(AVLTree*, const void*, const void*);
 	void (*erase)(AVLTree*, const void*);
 	const void* (*at)(AVLTree*, const void*);

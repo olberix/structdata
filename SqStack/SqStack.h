@@ -14,7 +14,7 @@ typedef struct SqStackOp{
 	const void* (*pop)(SqStack*);
 	void (*push)(SqStack*, const void*);
 	bool (*empty)(SqStack*);
-	void (*for_each)(SqStack*, SqlFEFuncT);
+	void (*for_each)(SqStack*, SequenceForEachFunc_Mutable, void*);
 	const void* (*at)(SqStack*, size_t);
 }SqStackOp;
 

@@ -20,8 +20,6 @@ typedef struct DuCirLinkList{
 #define HEAD(DL) ((DL)->link)
 #define END(DL) HEAD(DL)
 
-typedef void(*DucLFEFuncT)(size_t, void*);
-typedef bool(*DucLCmpFuncT)(const void*, const void*);
 typedef struct DucListOp{
 	DuCirLinkList* (*create)(size_t);
 	void (*destroy)(DuCirLinkList**);
@@ -32,10 +30,10 @@ typedef struct DucListOp{
 	const void* (*erase)(DuCirLinkList*, size_t);
 	const void* (*at)(DuCirLinkList*, size_t);
 	size_t (*length)(DuCirLinkList*);
-	void (*for_each)(DuCirLinkList*, DucLFEFuncT);
-	void (*r_for_each)(DuCirLinkList*, DucLFEFuncT);
+	void (*for_each)(DuCirLinkList*, SequenceForEachFunc_Mutable, void*);
+	void (*r_for_each)(DuCirLinkList*, SequenceForEachFunc_Mutable, void*);
 	void (*reverse)(DuCirLinkList*);
-	void (*sort)(DuCirLinkList*, DucLCmpFuncT);
+	void (*sort)(DuCirLinkList*, CmnCompareFunc);
 }DucListOp;
 
 #define DULIST_FOREACH(pList, type, logic) {\

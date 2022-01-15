@@ -103,22 +103,22 @@ static void reverse(SqList* pList)
 	FREE(tmpPoint);
 }
 
-static inline void for_each(SqList* pList, SqlFEFuncT func)
+static inline void for_each(SqList* pList, SequenceForEachFunc_Mutable func, void* args)
 {
 	CONDCHECK(pList->length != 0, STATUS_NOELEM, __FILE__, __LINE__);
 	for (size_t i = 0; i < pList->length; i++)
-		func(i, pList->pElems + i * pList->e_S);
+		func(i, pList->pElems + i * pList->e_S, args);
 }
 
-static inline void r_for_each(SqList* pList, SqlFEFuncT func)
+static inline void r_for_each(SqList* pList, SequenceForEachFunc_Mutable func, void* args)
 {
 	CONDCHECK(pList->length != 0, STATUS_NOELEM, __FILE__, __LINE__);
 	for (size_t i = pList->length; i >= 1; i--)/*if i >= 0, unsigned arith will overflow*/
-		func(i - 1, pList->pElems + (i - 1) * pList->e_S);
+		func(i - 1, pList->pElems + (i - 1) * pList->e_S, args);
 }
 
 /*C11 std include qsort*/
-static void QUICK_SORT(SqList* pList, SqlCmpFuncT func, size_t left, size_t right)
+static void QUICK_SORT(SqList* pList, CmnCompareFunc func, size_t left, size_t right)
 {
 	size_t e_S = pList->e_S;
 	POINTCREATE(void*, pivot, void, e_S);
@@ -142,7 +142,7 @@ static void QUICK_SORT(SqList* pList, SqlCmpFuncT func, size_t left, size_t righ
 		QUICK_SORT(pList, func, _ll + 1, right);
 }
 
-static inline void sort(SqList* pList, SqlCmpFuncT func)
+static inline void sort(SqList* pList, CmnCompareFunc func)
 {
 	if (pList->length <= 1)
 		return;

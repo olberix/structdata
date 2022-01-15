@@ -30,7 +30,7 @@ static inline void destroy(HashTable** stable)
 
 }
 
-static void for_each(HashTable* table, BForEachFuncT func)
+static void for_each(HashTable* table, UnorderedForEachFunc_Const func)
 {
 
 }

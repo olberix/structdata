@@ -30,15 +30,13 @@ typedef struct BPNode{
 	unsigned char isLeaf;//0为内部结点,1为叶子结点
 }BPNode;
 
-typedef bool(*BPKeyCompareFuncT)(const void*, const void*);
-typedef void(*BPForEachFuncT)(const void*, const void*);
 typedef struct BPTree{
 	char META_FILENAME[4096];
 	char INDEX_FILENAME[4096];
 	char DATA_FILENAME[4096];
 	BPMetaNode meta;
-	BPKeyCompareFuncT equalFunc;
-	BPKeyCompareFuncT lessFunc;
+	CmnCompareFunc equalFunc;
+	CmnCompareFunc lessFunc;
 	void* tmpRet;
 	char* tmpWriteStr;
 	char* metaMap;//元文件映射
@@ -48,9 +46,9 @@ typedef struct BPTree{
 }BPTree;
 
 typedef struct BPTreeOp{
-	BPTree* (*create)(size_t, size_t, BPKeyCompareFuncT, BPKeyCompareFuncT, const char*);
+	BPTree* (*create)(size_t, size_t, CmnCompareFunc, CmnCompareFunc, const char*);
 	void (*destroy)(BPTree**);
-	void (*traverse)(BPTree*, BPForEachFuncT);
+	void (*traverse)(BPTree*, UnorderedForEachFunc_Const, void*);
 	void (*insert)(BPTree*, const void*, const void*);
 	void (*erase)(BPTree*, const void*);
 	const void* (*at)(BPTree*, const void*);

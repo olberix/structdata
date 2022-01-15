@@ -106,20 +106,20 @@ static inline size_t length(DuCirLinkList* pList)
 	return pList->length;
 }
 
-static inline void for_each(DuCirLinkList* pList, DucLFEFuncT func)
+static inline void for_each(DuCirLinkList* pList, SequenceForEachFunc_Mutable func, void* args)
 {
 	CONDCHECK(pList->length != 0, STATUS_NOELEM, __FILE__, __LINE__);
 	DuCirLink* node = BEGIN(pList);
 	for (size_t i = 0; node != END(pList); node = node->next, i++)
-		func(i, node->pElem);
+		func(i, node->pElem, args);
 }
 
-static inline void r_for_each(DuCirLinkList* pList, DucLFEFuncT func)
+static inline void r_for_each(DuCirLinkList* pList, SequenceForEachFunc_Mutable func, void* args)
 {
 	CONDCHECK(pList->length != 0, STATUS_NOELEM, __FILE__, __LINE__);
 	DuCirLink* node = LAST(pList);
 	for (size_t i = pList->length - 1; node != END(pList); node = node->prior, i--)
-		func(i, node->pElem);
+		func(i, node->pElem, args);
 }
 
 static void reverse(DuCirLinkList* pList)
@@ -147,7 +147,7 @@ static inline void CHANGE_LOCATION(DuCirLink* CNode, DuCirLink* pivotNode)
 	pivotNode->prior = CNode;
 }
 
-static void quick_sort(DucLCmpFuncT func, DuCirLink* lhs, DuCirLink* rhs)
+static void quick_sort(CmnCompareFunc func, DuCirLink* lhs, DuCirLink* rhs)
 {
 	DuCirLink* recL = NULL;
 	DuCirLink* recR = NULL;
@@ -171,7 +171,7 @@ static void quick_sort(DucLCmpFuncT func, DuCirLink* lhs, DuCirLink* rhs)
 		quick_sort(func, lhs->next, recR);
 }
 
-static void sort(DuCirLinkList* pList, DucLCmpFuncT func)
+static void sort(DuCirLinkList* pList, CmnCompareFunc func)
 {
 	if (pList->length <= 1)
 		return;

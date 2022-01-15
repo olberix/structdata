@@ -11,7 +11,7 @@
 	memcpy((root)->pKey, pKey, (tree)->keySize);\
 	memcpy((root)->pValue, pValue, (tree)->valSize);
 
-static AVLTree* create(size_t keySize, size_t valSize, AVLKeyCompareFuncT equalFunc, AVLKeyCompareFuncT lessFunc)
+static AVLTree* create(size_t keySize, size_t valSize, CmnCompareFunc equalFunc, CmnCompareFunc lessFunc)
 {
 	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC, __FILE__, __LINE__);
 	size_t tr_s = sizeof(AVLTree);
@@ -63,59 +63,59 @@ static inline void destroy(AVLTree** stree)
 }
 
 /*前序遍历-递归*/
-static void __pre_order_traverse(AVLNode* root, AVLForEachFuncT func)
+static void __pre_order_traverse(AVLNode* root, UnorderedForEachFunc_Mutable func, void* args)
 {
 	ROOTCHECK(root);
-	func(root->pKey, root->pValue);
-	__pre_order_traverse(L_CHILD(root), func);
-	__pre_order_traverse(R_CHILD(root), func);
+	func(root->pKey, root->pValue, args);
+	__pre_order_traverse(L_CHILD(root), func, args);
+	__pre_order_traverse(R_CHILD(root), func, args);
 }
 
 /*中序遍历-递归*/
-static void __in_order_traverse(AVLNode* root, AVLForEachFuncT func)
+static void __in_order_traverse(AVLNode* root, UnorderedForEachFunc_Mutable func, void* args)
 {
 	ROOTCHECK(root);
-	__in_order_traverse(L_CHILD(root), func);
-	func(root->pKey, root->pValue);
-	__in_order_traverse(R_CHILD(root), func);
+	__in_order_traverse(L_CHILD(root), func, args);
+	func(root->pKey, root->pValue, args);
+	__in_order_traverse(R_CHILD(root), func, args);
 }
 
 /*后序遍历-递归*/
-static void __post_order_traverse(AVLNode* root, AVLForEachFuncT func)
+static void __post_order_traverse(AVLNode* root, UnorderedForEachFunc_Mutable func, void* args)
 {
 	ROOTCHECK(root);
-	__post_order_traverse(L_CHILD(root), func);
-	__post_order_traverse(R_CHILD(root), func);
-	func(root->pKey, root->pValue);
+	__post_order_traverse(L_CHILD(root), func, args);
+	__post_order_traverse(R_CHILD(root), func, args);
+	func(root->pKey, root->pValue, args);
 }
 
 /*前序遍历-递归*/
-static inline void pre_order_traverse(AVLTree* tree, AVLForEachFuncT func)
+static inline void pre_order_traverse(AVLTree* tree, UnorderedForEachFunc_Mutable func, void* args)
 {
-	__pre_order_traverse(tree->root, func);
+	__pre_order_traverse(tree->root, func, args);
 }
 
 /*中序遍历-递归*/
-static inline void in_order_traverse(AVLTree* tree, AVLForEachFuncT func)
+static inline void in_order_traverse(AVLTree* tree, UnorderedForEachFunc_Mutable func, void* args)
 {
-	__in_order_traverse(tree->root, func);
+	__in_order_traverse(tree->root, func, args);
 }
 
 /*后序遍历-递归*/
-static inline void post_order_traverse(AVLTree* tree, AVLForEachFuncT func)
+static inline void post_order_traverse(AVLTree* tree, UnorderedForEachFunc_Mutable func, void* args)
 {
-	__post_order_traverse(tree->root, func);
+	__post_order_traverse(tree->root, func, args);
 }
 
 /*前序遍历-栈*/
-static void pre_order_traverse_st(AVLTree* tree, AVLForEachFuncT func)
+static void pre_order_traverse_st(AVLTree* tree, UnorderedForEachFunc_Mutable func, void* args)
 {
 	AVLNode* root = tree->root;
 	ROOTCHECK(root);
 	SqStack* stack = SqStack().create(sizeof(AVLNode*), NULL);
 	while(root || !SqStack().empty(stack)){
 		if (root){
-			func(root->pKey, root->pValue);
+			func(root->pKey, root->pValue, args);
 			SqStack().push(stack, &root);
 			root = L_CHILD(root);
 		}
@@ -128,7 +128,7 @@ static void pre_order_traverse_st(AVLTree* tree, AVLForEachFuncT func)
 }
 
 /*中序遍历-栈*/
-static void in_order_traverse_st(AVLTree* tree, AVLForEachFuncT func)
+static void in_order_traverse_st(AVLTree* tree, UnorderedForEachFunc_Mutable func, void* args)
 {
 	AVLNode* root = tree->root;
 	ROOTCHECK(root);
@@ -140,7 +140,7 @@ static void in_order_traverse_st(AVLTree* tree, AVLForEachFuncT func)
 		}
 		else{
 			root = TOCONSTANT(AVLNode*, SqStack().pop(stack));
-			func(root->pKey, root->pValue);
+			func(root->pKey, root->pValue, args);
 			root = R_CHILD(root);
 		}
 	}
@@ -148,7 +148,7 @@ static void in_order_traverse_st(AVLTree* tree, AVLForEachFuncT func)
 }
 
 /*后序遍历-栈*/
-static void post_order_traverse_st(AVLTree* tree, AVLForEachFuncT func)
+static void post_order_traverse_st(AVLTree* tree, UnorderedForEachFunc_Mutable func, void* args)
 {
 	AVLNode* root = tree->root;
 	ROOTCHECK(root);
@@ -165,7 +165,7 @@ static void post_order_traverse_st(AVLTree* tree, AVLForEachFuncT func)
 				root = R_CHILD(root);
 			else{
 				SqStack().pop(stack);
-				func(root->pKey, root->pValue);
+				func(root->pKey, root->pValue, args);
 				tmpRoot = root;
 				root = NULL;
 			}
@@ -175,12 +175,12 @@ static void post_order_traverse_st(AVLTree* tree, AVLForEachFuncT func)
 }
 
 /*中序遍历-线索*/
-static void in_order_traverse_thrt(AVLTree* tree, AVLForEachFuncT func)
+static void in_order_traverse_thrt(AVLTree* tree, UnorderedForEachFunc_Mutable func, void* args)
 {
 	AVLNode* root = tree->root;
 	ROOTCHECK(root);
 	for(root = tree->thrtHead.rchild; root != &(tree->thrtHead);){
-		func(root->pKey, root->pValue);
+		func(root->pKey, root->pValue, args);
 		if (R_CHILD(root)){
 			root = R_CHILD(root);
 			while(L_CHILD(root))
@@ -192,7 +192,7 @@ static void in_order_traverse_thrt(AVLTree* tree, AVLForEachFuncT func)
 }
 
 /*层级遍历*/
-static void level_order_traverse(AVLTree* tree, AVLForEachFuncT func)
+static void level_order_traverse(AVLTree* tree, UnorderedForEachFunc_Mutable func, void* args)
 {
 	AVLNode* root = tree->root;
 	ROOTCHECK(root);
@@ -200,7 +200,7 @@ static void level_order_traverse(AVLTree* tree, AVLForEachFuncT func)
 	DlQueue().push(queue, &root);
 	while(!DlQueue().empty(queue)){
 		root = TOCONSTANT(AVLNode*, DlQueue().pop(queue));
-		func(root->pKey, root->pValue);
+		func(root->pKey, root->pValue, args);
 		AVLNode* tmpRoot = L_CHILD(root);
 		if (tmpRoot)
 			DlQueue().push(queue, &tmpRoot);
@@ -211,9 +211,9 @@ static void level_order_traverse(AVLTree* tree, AVLForEachFuncT func)
 	DlQueue().destroy(&queue);
 }
 
-static inline void traverse(AVLTree* tree, AVLForEachFuncT func)
+static inline void traverse(AVLTree* tree, UnorderedForEachFunc_Mutable func, void* args)
 {
-	in_order_traverse_st(tree, func);
+	in_order_traverse_st(tree, func, args);
 }
 
 static inline unsigned char _H(AVLNode* root)

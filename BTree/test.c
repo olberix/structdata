@@ -35,7 +35,7 @@ bool lessFunc(const void* lh, const void* rh)
 	return _rh->a < _lh->a;
 }
 
-void foreach(const void* pKey, const void* pValue)
+void foreach(const void* pKey, const void* pValue, void* args)
 {
 	const TYKEY* key = pKey;
 	const TYVALUE* value = pValue;
@@ -129,10 +129,10 @@ int main(int argc, char const *argv[])
 	}
 
 
-	// BTree().traverse(bt, foreach);
+	// BTree().traverse(bt, foreach, NULL);
 	// puts("=======================================================");
 	// puts("=======================================================");
-	// BTree().level_order_traverse(bt, foreach);
+	// BTree().level_order_traverse(bt, foreach, NULL);
 
 
 	puts("=======================================================");

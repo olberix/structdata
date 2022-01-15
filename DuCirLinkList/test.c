@@ -7,13 +7,13 @@ typedef struct StC{
 	int a;
 }StC;
 
-void display(size_t key, void* elem)
+void display(size_t key, void* elem, void* args)
 {
 	StC* tmp = (StC*)elem;
 	printf("[%d]\t%d\t\t%lf\n", key, tmp->a, tmp->b);
 }
 
-void multi(size_t key, void* elem)
+void multi(size_t key, void* elem, void* args)
 {
 	StC* tmp = (StC*)elem;
 	tmp->a *= 10;
@@ -46,14 +46,14 @@ int main()
 	DucList().insert(list, 3, &tmp);
 	DucList().erase(list, 2);
 	DucList().reverse(list);
-	DucList().r_for_each(list, multi);
-	// DucList().for_each(list, display);
+	DucList().r_for_each(list, multi, NULL);
+	// DucList().for_each(list, display, NULL);
 
 	DucList().clear(list);
 	tmp.a = 588;
 	tmp.b = 5.1;
 	DucList().insert(list, 0, &tmp);
-	// DucList().for_each(list, display);
+	// DucList().for_each(list, display, NULL);
 
 	tmp.a = 23;
 	tmp.b = 177.2;
@@ -72,9 +72,9 @@ int main()
 		DucList().push_back(list, &tmp);
 		DucList().reverse(list);
 	}
-	DucList().for_each(list, display);
+	DucList().for_each(list, display, NULL);
 	printf("========================================\n");
-	// DucList().for_each(list, display);
+	// DucList().for_each(list, display, NULL);
 	// DucList().erase(list, 0);
 	// DucList().erase(list, 0);
 	// DucList().erase(list, 0);
@@ -88,7 +88,7 @@ int main()
 	// tmp = DucList().at(list, 729999);
 	// printf("%d\t%lf\n", tmp.a, tmp.b);
 	DucList().sort(list, cmp);
-	// DucList().for_each(list, display);
+	// DucList().for_each(list, display, NULL);
 	DucList().destroy(&list);
 
 	list = DucList().create(sizeof(int));

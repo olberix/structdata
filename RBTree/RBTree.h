@@ -21,23 +21,21 @@ typedef struct RBNode{
 	unsigned char color;
 }RBNode;
 
-typedef bool(*RBKeyCompareFuncT)(const void*, const void*);
-typedef void(*RBForEachFuncT)(const void*, void*);
 typedef struct RBTree{
 	RBNode* root;
-	RBKeyCompareFuncT equalFunc;
-	RBKeyCompareFuncT lessFunc;
+	CmnCompareFunc equalFunc;
+	CmnCompareFunc lessFunc;
 	size_t keySize;
 	size_t valSize;
 	size_t tree_size;
 }RBTree;
 
 typedef struct RBTreeOp{
-	RBTree* (*create)(size_t, size_t, RBKeyCompareFuncT, RBKeyCompareFuncT);
+	RBTree* (*create)(size_t, size_t, CmnCompareFunc, CmnCompareFunc);
 	void (*clear)(RBTree*);
 	void (*destroy)(RBTree**);
-	void (*level_order_traverse)(RBTree*, RBForEachFuncT);/*保留层次遍历,用于调试*/
-	void (*traverse)(RBTree*, RBForEachFuncT);
+	void (*level_order_traverse)(RBTree*, UnorderedForEachFunc_Mutable, void*);/*保留层次遍历,用于调试*/
+	void (*traverse)(RBTree*, UnorderedForEachFunc_Mutable, void*);
 	void (*insert)(RBTree*, const void*, const void*);
 	void (*erase)(RBTree*, const void*);
 	const void* (*at)(RBTree*, const void*);

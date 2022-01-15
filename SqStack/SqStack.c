@@ -44,9 +44,9 @@ static inline void destroy(SqStack** stack)
 	FREE((*stack));
 }
 
-static inline void for_each(SqStack* stack, SqlFEFuncT func)
+static inline void for_each(SqStack* stack, SequenceForEachFunc_Mutable func, void* args)
 {
-	SqList().for_each(stack->list, func);
+	SqList().for_each(stack->list, func, args);
 }
 
 static inline const void* at(SqStack* stack, size_t loc)

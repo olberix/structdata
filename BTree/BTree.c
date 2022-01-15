@@ -107,7 +107,7 @@ static inline void FILERELEASE(BTree* bt, BNode* node)
 	CONDCHECK(fallocate(bt->fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, node->selfPointer, PAGESIZE) >= 0, STATUS_FALLOCATEERROR, __FILE__, __LINE__);
 }
 
-static BTree* create(size_t keySize, size_t valSize, BKeyCompareFuncT equalFunc, BKeyCompareFuncT lessFunc, const char* fileName)
+static BTree* create(size_t keySize, size_t valSize, CmnCompareFunc equalFunc, CmnCompareFunc lessFunc, const char* fileName)
 {
 	CONDCHECK(keySize > 0 && valSize > 0, STATUS_SIZEERROR, __FILE__, __LINE__);
 	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC, __FILE__, __LINE__);
@@ -143,7 +143,7 @@ static inline void destroy(BTree** sbt)
 	FREE(*sbt);
 }
 
-static void level_order_traverse(BTree* bt, BForEachFuncT func)
+static void level_order_traverse(BTree* bt, UnorderedForEachFunc_Const func, void* args)
 {
 	if (!ROOTPOINTER)
 		return;
@@ -157,7 +157,7 @@ static void level_order_traverse(BTree* bt, BForEachFuncT func)
 			for (ssize_t i = 0; i < node->size + 1; i++)
 				DlQueue().push(queue, node->childPointers + i);
 		for (ssize_t i = 0; i < node->size; i++)
-			func(node->pKey + KEYSIZE * i, node->pValue + VALSIZE * i);
+			func(node->pKey + KEYSIZE * i, node->pValue + VALSIZE * i, args);
 #ifdef DEBUG
 		puts("-----");
 #endif
@@ -167,7 +167,7 @@ static void level_order_traverse(BTree* bt, BForEachFuncT func)
 }
 
 /*理论需要最大栈空间S=log(minNC+1, N) * PAGESIZE,以minNC取极端值1为例,10亿级数据S约等于30,一般内存页大小为4K,此时需求内存为120K,洒洒水啦*/
-static void __in_order_traverse(BTree* bt, off_t pointer, BForEachFuncT func)
+static void __in_order_traverse(BTree* bt, off_t pointer, UnorderedForEachFunc_Const func, void* args)
 {
 	if (!pointer)
 		return;
@@ -175,22 +175,22 @@ static void __in_order_traverse(BTree* bt, off_t pointer, BForEachFuncT func)
 	READNODE(bt, pointer, node);
 	if (ISLEAF(node)){
 		for(ssize_t i = 0; i < node->size; i++)
-			func(node->pKey + i * KEYSIZE, node->pValue + i * VALSIZE);
+			func(node->pKey + i * KEYSIZE, node->pValue + i * VALSIZE, args);
 		RELEASEBNODE(&node);
 		return;
 	}
-	__in_order_traverse(bt, node->childPointers[0], func);
+	__in_order_traverse(bt, node->childPointers[0], func, args);
 	for (ssize_t i = 0; i < node->size; i++){
-		func(node->pKey + i * KEYSIZE, node->pValue + i * VALSIZE);
-		__in_order_traverse(bt, node->childPointers[i + 1], func);
+		func(node->pKey + i * KEYSIZE, node->pValue + i * VALSIZE, args);
+		__in_order_traverse(bt, node->childPointers[i + 1], func, args);
 	}
 	RELEASEBNODE(&node);
 }
 
 /*中序遍历-递归实现*/
-static inline void traverse(BTree* bt, BForEachFuncT func)
+static inline void traverse(BTree* bt, UnorderedForEachFunc_Const func, void* args)
 {
-	__in_order_traverse(bt, ROOTPOINTER, func);
+	__in_order_traverse(bt, ROOTPOINTER, func, args);
 }
 
 //二分法查找pKey位于对比结点的位置
