@@ -17,6 +17,7 @@ typedef struct AVLTree{
 	AVLNode thrtHead;
 	CmnCompareFunc equalFunc;
 	CmnCompareFunc lessFunc;
+	void* tmpRet;
 	size_t keySize;
 	size_t valSize;
 	size_t tree_size;

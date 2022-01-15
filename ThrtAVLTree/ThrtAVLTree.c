@@ -16,6 +16,7 @@ static AVLTree* create(size_t keySize, size_t valSize, CmnCompareFunc equalFunc,
 	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC, __FILE__, __LINE__);
 	size_t tr_s = sizeof(AVLTree);
 	POINTCREATE_INIT(AVLTree*, ret, AVLTree, tr_s);
+	POINTCREATE(EMPTYDEF, ret->tmpRet, void, valSize);
 	ret->thrtHead.lchild = &ret->thrtHead;
 	ret->thrtHead.rchild = &ret->thrtHead;
 	ret->thrtHead.ThrtFlag = 0x3;
@@ -59,6 +60,7 @@ static inline void clear(AVLTree* tree)
 static inline void destroy(AVLTree** stree)
 {
 	clear(*stree);
+	FREE((*stree)->tmpRet);
 	FREE(*stree);
 }
 
@@ -570,8 +572,10 @@ const void* at(AVLTree* tree, const void* pKey)
 {
 	AVLNode* root = tree->root;
 	while(root){
-		if (tree->equalFunc(root->pKey, pKey))
-			return root->pValue;
+		if (tree->equalFunc(root->pKey, pKey)){
+			memcpy(tree->tmpRet, root->pValue, tree->valSize);
+			return tree->tmpRet;
+		}
 		if (tree->lessFunc(root->pKey, pKey))
 			root = L_CHILD(root);
 		else

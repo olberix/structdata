@@ -15,6 +15,7 @@ static RBTree* create(size_t keySize, size_t valSize, CmnCompareFunc equalFunc, 
 	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC, __FILE__, __LINE__);
 	size_t tr_s = sizeof(RBTree);
 	POINTCREATE_INIT(RBTree*, ret, RBTree, tr_s);
+	POINTCREATE(EMPTYDEF, ret->tmpRet, void, valSize);
 	ret->keySize = keySize;
 	ret->valSize = valSize;
 	ret->equalFunc = equalFunc;
@@ -39,6 +40,7 @@ static inline void clear(RBTree* tree)
 static inline void destroy(RBTree** stree)
 {
 	clear(*stree);
+	FREE((*stree)->tmpRet);
 	FREE(*stree);
 }
 
@@ -367,8 +369,10 @@ const void* at(RBTree* tree, const void* pKey)
 {
 	RBNode* root = tree->root;
 	while(root){
-		if (tree->equalFunc(root->pKey, pKey))
-			return root->pValue;
+		if (tree->equalFunc(root->pKey, pKey)){
+			memcpy(tree->tmpRet, root->pValue, tree->valSize);
+			return tree->tmpRet;
+		}
 		if (tree->lessFunc(root->pKey, pKey))
 			root = root->lchild;
 		else
