@@ -41,9 +41,17 @@ typedef struct SqListOp{
 	}\
 }
 
-#define SQLIST_FOREACH_REVERSE(pList, type, logic) {\
+#define SQLIST_FOREACH_UNSAFE(pList, type, logic) {\
 	type* _PVALUE__ = (type*)(pList)->pElems;\
-	for (size_t tmpKey = (pList)->length; tmpKey >= 1; tmpKey--){\
+	for (size_t key = 0; key < (pList)->size; key++){\
+		type value = TOCONSTANT(type, _PVALUE__ + key);\
+		logic;\
+	}\
+}
+
+#define SQLIST_FOREACH_REVERSE_UNSAFE(pList, type, logic) {\
+	type* _PVALUE__ = (type*)(pList)->pElems;\
+	for (size_t tmpKey = (pList)->size; tmpKey >= 1; tmpKey--){\
 		size_t key = tmpKey - 1;\
 		type value = TOCONSTANT(type, _PVALUE__ + key);\
 		logic;\
