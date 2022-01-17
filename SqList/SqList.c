@@ -64,6 +64,12 @@ static inline void change(SqList* pList, size_t loc, const void* elem)
 	memcpy(pList->pElems + loc * pList->e_S, elem, pList->e_S);
 }
 
+static inline void change_unsafe(SqList* pList, size_t loc, const void* elem)
+{
+	CONDCHECK(loc < pList->size, STATUS_INVALIDINDEX, __FILE__, __LINE__);
+	memcpy(pList->pElems + loc * pList->e_S, elem, pList->e_S);
+}
+
 static const void* erase(SqList* pList, size_t loc)
 {
 	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
@@ -77,6 +83,12 @@ static const void* erase(SqList* pList, size_t loc)
 static inline const void* at(SqList* pList, size_t loc)
 {
 	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
+	return pList->pElems + loc * pList->e_S;
+}
+
+static inline const void* at_unsafe(SqList* pList, size_t loc)
+{
+	CONDCHECK(loc < pList->size, STATUS_INVALIDINDEX, __FILE__, __LINE__);
 	return pList->pElems + loc * pList->e_S;
 }
 
@@ -158,8 +170,10 @@ inline const SqListOp* GetSqListOpStruct()
 		.insert = insert,
 		.push_back = push_back,
 		.change = change,
+		.change_unsafe = change_unsafe,
 		.erase = erase,
 		.at = at,
+		.at_unsafe = at_unsafe,
 		.length = length,
 		.for_each = for_each,
 		.r_for_each = r_for_each,
