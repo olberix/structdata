@@ -20,19 +20,90 @@ static HashTable* create(size_t keySize, size_t valSize, HashFuncTT hashFunc, Cm
 	return _ht;
 }
 
+static inline void rb_clear_foreach(const void* key, void* val, void* args)
+{
+	HashEntry entry = TOCONSTANT(HashEntry, val);
+	FREEENTRY(entry);
+}
+
 static void clear(HashTable* table)
 {
-
+	SQLIST_FOREACH_UNSAFE(table->list, HashBucket, {
+		switch(value.type){
+			case BUCKETTYPE_NIL:
+				break;
+			case BUCKETTYPE_ORIGIN:{
+				FREEENTRY(value.bucket.entry);
+				break;
+			}
+			case BUCKETTYPE_LIST:{
+				DULIST_FOREACH(value.bucket.entry_list, HashEntry, {
+					FREEENTRY(value);
+				});
+				DucList().destroy(&(value.bucket.entry_list));
+				break;
+			}
+			case BUCKETTYPE_RBTREE:{
+				RBTree().traverse(value.bucket.entry_tree, rb_clear_foreach, NULL);
+				RBTree().destroy(&(value.bucket.entry_tree));
+				break;
+			}
+			default:{
+				CONDCHECK(0, STATUS_INVALIDBUCKETTYPE, __FILE__, __LINE__);
+				break;
+			}
+		}
+	});
+	table->elem_count = 0;
 }
 
 static inline void destroy(HashTable** stable)
 {
+	clear(*stable);
+	SqList().destroy(&((*stable)->list));
+	FREE((*stable)->tmpRet);
+}
 
+typedef struct Hash2RbFA{
+	UnorderedForEachFunc_Mutable hash_fe;
+	void* args;
+}Hash2RbFA;
+
+static inline void rb_traverse_foreach(const void* key, void* val, void* args)
+{
+	HashEntry entry = TOCONSTANT(HashEntry, val);
+	((Hash2RbFA*)args)->hash_fe(key, entry.pValue, ((Hash2RbFA*)args)->args);
 }
 
 static void for_each(HashTable* table, UnorderedForEachFunc_Mutable func, void* args)
 {
-
+	SQLIST_FOREACH_UNSAFE(table->list, HashBucket, {
+		switch(value.type){
+			case BUCKETTYPE_NIL:
+				break;
+			case BUCKETTYPE_ORIGIN:{
+				func(value.bucket.entry.pKey, value.bucket.entry.pValue, args);
+				break;
+			}
+			case BUCKETTYPE_LIST:{
+				DULIST_FOREACH(value.bucket.entry_list, HashEntry, {
+					func(value.pKey, value.pValue, args);
+				});
+				break;
+			}
+			case BUCKETTYPE_RBTREE:{
+				Hash2RbFA argss;
+				argss.hash_fe = func;
+				argss.args = args;
+				RBTree().traverse(value.bucket.entry_tree, rb_traverse_foreach, &argss);
+				break;
+			}
+			default:{
+				CONDCHECK(0, STATUS_INVALIDBUCKETTYPE, __FILE__, __LINE__);
+				break;
+			}
+		}
+	});
 }
 
 static void __insert(HashTable*, HashEntry);
@@ -54,8 +125,8 @@ static void __rehash(HashTable* table)
 	table->list = SqList().create(sizeof(HashBucket), &(table->table_size));
 	SqList().mem_init(table->list);
 	table->elem_count = 0;
-	//copy
-	SQLIST_FOREACH(__list, HashBucket, {
+	//reinsert
+	SQLIST_FOREACH_UNSAFE(__list, HashBucket, {
 		switch(value.type){
 			case BUCKETTYPE_NIL:
 				break;
@@ -109,13 +180,13 @@ static inline bool __transfrom_into_rbtree(HashTable* table, HashBucket* _bkt)
 static void __insert(HashTable* table, HashEntry entry)
 {
 	size_t hashCode = table->hashFunc(entry.pKey) & (table->table_size - 1);
-	HashBucket _bkt = TOCONSTANT(HashBucket, SqList().at(table->list, hashCode));
+	HashBucket _bkt = TOCONSTANT(HashBucket, SqList().at_unsafe(table->list, hashCode));
 	__HashBucket* bucket = &(_bkt.bucket);
 	switch(_bkt.type){
 		case BUCKETTYPE_NIL:{
 			bucket->entry = entry;
 			_bkt.type = BUCKETTYPE_ORIGIN;
-			SqList().change(table->list, hashCode, &_bkt);
+			SqList().change_unsafe(table->list, hashCode, &_bkt);
 			table->elem_count++;
 			break;
 		}
@@ -130,7 +201,7 @@ static void __insert(HashTable* table, HashEntry entry)
 				__transfrom_into_list(&_bkt);
 				DucList().push_back(bucket->entry_list, &entry);
 			}
-			SqList().change(table->list, hashCode, &_bkt);
+			SqList().change_unsafe(table->list, hashCode, &_bkt);
 			table->elem_count++;
 			break;
 		}
@@ -152,7 +223,7 @@ static void __insert(HashTable* table, HashEntry entry)
 			DucList().push_back(bucket->entry_list, &entry);
 			bool ret = __transfrom_into_rbtree(table, &_bkt);
 			if (ret)
-				SqList().change(table->list, hashCode, &_bkt);
+				SqList().change_unsafe(table->list, hashCode, &_bkt);
 			table->elem_count++;
 			break;
 		}
@@ -184,13 +255,50 @@ static inline void insert(HashTable* table, const void* pKey, const void* pValue
 
 static void erase(HashTable* table, const void* pKey)
 {
-
+	size_t hashCode = table->hashFunc(pKey) & (table->table_size - 1);
+	HashBucket _bkt = TOCONSTANT(HashBucket, SqList().at_unsafe(table->list, hashCode));
+	__HashBucket* bucket = &(_bkt.bucket);
+	switch(_bkt.type){
+		case BUCKETTYPE_NIL:
+			break;
+		case BUCKETTYPE_ORIGIN:{
+			if (table->equalFunc(bucket->entry.pKey, pKey)){
+				FREEENTRY(bucket->entry);
+				table->elem_count--;
+			}
+			break;
+		}
+		case BUCKETTYPE_LIST:{
+			DULIST_FOREACH(bucket->entry_list, HashEntry, {
+				if (table->equalFunc(value.pKey, pKey)){
+					DucList().erase(bucket->entry_list, key);
+					table->elem_count--;
+					break;
+				}
+			});
+			break;
+		}
+		case BUCKETTYPE_RBTREE:{
+			const void* ret = RBTree().at(bucket->entry_tree, pKey);
+			if (!ret)
+				break;
+			HashEntry entry = TOCONSTANT(HashEntry, ret);
+			FREEENTRY(entry);
+			RBTree().erase(bucket->entry_tree, pKey);
+			table->elem_count--;
+			break;
+		}
+		default:{
+			CONDCHECK(0, STATUS_INVALIDBUCKETTYPE, __FILE__, __LINE__);
+			break;
+		}
+	}
 }
 
 static const void* at(HashTable* table, const void* pKey)
 {
 	size_t hashCode = table->hashFunc(pKey) & (table->table_size - 1);
-	HashBucket _bkt = TOCONSTANT(HashBucket, SqList().at(table->list, hashCode));
+	HashBucket _bkt = TOCONSTANT(HashBucket, SqList().at_unsafe(table->list, hashCode));
 	switch(_bkt.type){
 		case BUCKETTYPE_NIL:
 			return NULL;
@@ -208,7 +316,7 @@ static const void* at(HashTable* table, const void* pKey)
 			return NULL;
 		}
 		case BUCKETTYPE_RBTREE:{
-			void* ret = RBTree().at(_bkt.bucket.entry_tree, pKey);
+			const void* ret = RBTree().at(_bkt.bucket.entry_tree, pKey);
 			if (!ret)
 				return NULL;
 			HashEntry entry = TOCONSTANT(HashEntry, ret);
@@ -222,12 +330,12 @@ static const void* at(HashTable* table, const void* pKey)
 
 static inline void change(HashTable* table, const void* pKey, const void* pValue)
 {
-
+	insert(table, pKey, pValue);
 }
 
 static inline size_t size(HashTable* table)
 {
-
+	return table->elem_count;
 }
 
 inline const HashTableOp* GetHashTableOpStruct()

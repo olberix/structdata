@@ -21,17 +21,17 @@ inline bool default_equal_func_string(const void* basis, const void* rhs) { retu
 
 inline size_t HASH_SEQ(const unsigned char* stream, size_t length)
 {
-	// static_assert(sizeof(size_t) == 8, "plz run with 64-bit machine mode.");
-	// const size_t seed = 14695981039346656037ULL;
-	// const size_t factor = 1099511628211ULL;
-	// size_t baseCode = seed;
-	// for(size_t next = 0; next < length; ++next){
-	// 	baseCode ^= (size_t)stream[next];
-	// 	baseCode *= factor;
-	// }
-	// baseCode ^= baseCode >> 32;
-	// return baseCode;
-	return 1;
+	static_assert(sizeof(size_t) == 8, "plz run with 64-bit machine mode.");
+	const size_t seed = 14695981039346656037ULL;
+	const size_t factor = 1099511628211ULL;
+	size_t baseCode = seed;
+	for(size_t next = 0; next < length; ++next){
+		baseCode ^= (size_t)stream[next];
+		baseCode *= factor;
+	}
+	baseCode ^= baseCode >> 32;
+	return baseCode;
+	// return 1;
 }
 inline size_t default_hash_func_int8(const void* key) { return HASH_SEQ(key, sizeof(char)); }
 inline size_t default_hash_func_uint8(const void* key) { return HASH_SEQ(key, sizeof(unsigned char)); }
