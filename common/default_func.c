@@ -31,6 +31,13 @@ inline size_t HASH_SEQ(const unsigned char* stream, size_t length)
 	}
 	baseCode ^= baseCode >> 32;
 	return baseCode;
+	// unsigned char ret = *stream;
+	// if (ret % 3 == 2)
+	// 	return 7;
+	// else if (ret % 3 == 1)
+	// 	return 2;
+	// else
+	// 	return 1;
 	// return 1;
 }
 inline size_t default_hash_func_int8(const void* key) { return HASH_SEQ(key, sizeof(char)); }

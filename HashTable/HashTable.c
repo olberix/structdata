@@ -54,6 +54,7 @@ static void clear(HashTable* table)
 			}
 		}
 	});
+	SqList().mem_init(table->list);
 	table->elem_count = 0;
 }
 
@@ -200,9 +201,9 @@ static void __insert(HashTable* table, HashEntry entry)
 			else{
 				__transfrom_into_list(&_bkt);
 				DucList().push_back(bucket->entry_list, &entry);
+				table->elem_count++;
 			}
 			SqList().change_unsafe(table->list, hashCode, &_bkt);
-			table->elem_count++;
 			break;
 		}
 		case BUCKETTYPE_LIST:{
@@ -253,44 +254,51 @@ static inline void insert(HashTable* table, const void* pKey, const void* pValue
 	__insert(table, entry);
 }
 
-static void erase(HashTable* table, const void* pKey)
+static const void* erase(HashTable* table, const void* pKey)
 {
 	size_t hashCode = table->hashFunc(pKey) & (table->table_size - 1);
 	HashBucket _bkt = TOCONSTANT(HashBucket, SqList().at_unsafe(table->list, hashCode));
 	__HashBucket* bucket = &(_bkt.bucket);
 	switch(_bkt.type){
 		case BUCKETTYPE_NIL:
-			break;
+			return NULL;
 		case BUCKETTYPE_ORIGIN:{
 			if (table->equalFunc(bucket->entry.pKey, pKey)){
+				memcpy(table->tmpRet, bucket->entry.pValue, table->valSize);
 				FREEENTRY(bucket->entry);
+				_bkt.type = BUCKETTYPE_NIL;
+				SqList().change_unsafe(table->list, hashCode, &_bkt);
 				table->elem_count--;
+				return table->tmpRet;
 			}
-			break;
+			return NULL;
 		}
 		case BUCKETTYPE_LIST:{
 			DULIST_FOREACH(bucket->entry_list, HashEntry, {
 				if (table->equalFunc(value.pKey, pKey)){
+					memcpy(table->tmpRet, value.pValue, table->valSize);
+					FREEENTRY(value);
 					DucList().erase(bucket->entry_list, key);
 					table->elem_count--;
-					break;
+					return table->tmpRet;
 				}
 			});
-			break;
+			return NULL;
 		}
 		case BUCKETTYPE_RBTREE:{
 			const void* ret = RBTree().at(bucket->entry_tree, pKey);
 			if (!ret)
-				break;
+				return NULL;
 			HashEntry entry = TOCONSTANT(HashEntry, ret);
+			memcpy(table->tmpRet, entry.pValue, table->valSize);
 			FREEENTRY(entry);
 			RBTree().erase(bucket->entry_tree, pKey);
 			table->elem_count--;
-			break;
+			return table->tmpRet;
 		}
 		default:{
 			CONDCHECK(0, STATUS_INVALIDBUCKETTYPE, __FILE__, __LINE__);
-			break;
+			return NULL;
 		}
 	}
 }

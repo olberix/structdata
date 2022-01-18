@@ -47,7 +47,7 @@ typedef struct HashTableOp{
 	void (*destroy)(HashTable**);
 	void (*for_each)(HashTable*, UnorderedForEachFunc_Mutable, void*);
 	void (*insert)(HashTable*, const void*, const void*);
-	void (*erase)(HashTable*, const void*);
+	const void* (*erase)(HashTable*, const void*);
 	const void* (*at)(HashTable*, const void*);
 	void (*change)(HashTable*, const void*, const void*);
 	size_t (*size)(HashTable*);
