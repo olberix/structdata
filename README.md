@@ -1,15 +1,15 @@
 # <span id="11">C Structdata Project</span>
-这是使用Clang实现的数据结构代码，创建于9/12/2021，这里面包含了大部分常见的数据结构实现，后面还会继续添加完善；开始这个project的初衷是为了重新学习数据结构，但是为了以后能在某些地方复用这些代码，所以会尽量将这部分代码写得通用，这也体现在了这个项目内部，如栈复用了数组代码，树结构调用了栈和队列实现了遍历、插入等操作。如果你打算阅读项目里面的代码，你需要知道下面的一些要点：
+这是使用Clang实现的数据结构代码，创建于2021/9/12，这里面包含了大部分常见的数据结构实现，后面还会继续添加完善；开始这个project的初衷是为了重新学习数据结构，但是为了以后能在某些地方复用这些代码，所以会尽量将这部分代码写得通用，这也体现在了这个项目内部，如栈结构复用了数组代码，树结构引用了栈和队列，哈希结构引用了链表和红黑树等
   
 *	部分代码只适合运行于64位的linux平台，并且内核版本不低于linux3.10
 *	所有的实现都不是线程安全
-*	通过void\*实现数据泛型，在创建数据结构的时候会传入键值的size保存以进行后面的操作
-*	某种数据结构的实现都只包含了一个.h和一个.c文件，.c文件里面的函数实现基本都是静态函数，其中全大写和"\_\_"开始的函数都是内联函数；在.h文件中提供了一个包含操作接口的结构体，可以通过相关函数获取这个结构体单例进而操作具体的数据结构
+*	通过void\*实现数据泛型，在创建数据结构的时候会传入键值大小，操作函数等
+*	某种数据结构的实现都只包含了一个.h和一个.c文件，.c文件里面的函数实现大部分为静态函数，其中以全大写或"\_\_"开始命名的函数为内部函数，不提供外部使用，所以不进行不必要的条件判断；在.h文件中提供了一个包含操作接口的结构体，可以通过相关函数获取这个结构体单例进而操作具体的数据结构
   
 |线性结构|[SqList](#1)|[SqStack](#2)|[DuCirLinkList](#3)|[DlQueue](#4)|
 |:----|:----|:----|:----|:----|
 |**树结构**|**[ThrtAVLTree](#5)**|**[RBTree](#6)**|**[B-Tree](#7)**|**[B+Tree](#8)**|
-|**图结构**|
+|**其他结构**|**[HashTable](#9)**|
   
 ## <span id="1">SqList</span>
 ```c
@@ -58,21 +58,22 @@ typedef struct AVLNode{
 	void* pValue;
 	struct AVLNode* lchild;
 	struct AVLNode* rchild;
-	unsigned char height;
+	unsigned char height;/*节点的最大高度,叶子节点恒为1,用于计算Balanced factor*/
 	unsigned char ThrtFlag;
 }AVLNode;
-typedef bool(*AVLKeyCompareFuncT)(const void*, const void*);
-typedef void(*AVLForEachFuncT)(const void*, void*);
+
 typedef struct AVLTree{
 	AVLNode* root;
 	AVLNode thrtHead;
-	AVLKeyCompareFuncT equalFunc;
-	AVLKeyCompareFuncT lessFunc;
+	CmnCompareFunc equalFunc;
+	CmnCompareFunc lessFunc;
+	void* tmpRet;
 	size_t keySize;
 	size_t valSize;
+	size_t tree_size;
 }AVLTree;
 ```
-平衡二叉搜索树(Balanced Binary Tree/Height-Balanced Tree)，AVLNode包含键值对和左右孩子指针，新增height字段记录结点的高度用于计算Balanced Factor，其中叶子结点高度恒为1，非叶子结点取左右孩子最大高度+1，AVLTree创建的时候需要传入自定义的比较函数和键值大小  
+平衡二叉搜索树(Balanced Binary Tree/Height-Balanced Tree)，AVLNode包含键值对和左右孩子指针，新增height字段记录结点的高度用于计算Balanced Factor，其中叶子结点高度恒为1，非叶子结点取左右孩子最大高度+1，AVLTree创建的时候需要传入默认或自定义的比较函数和键值大小  
 
 AVLTree是严格平衡的二叉排序树，因为平衡因子的绝对值不会超过1，所以叶子结点只会出现在层数最大的两层，可以发现，当数据达到一定量的时候，层数越大的数据离散程度就越小，下几次的插入或删除操作所发生旋转的概率就会变低，或者旋转的次数变少；值得注意的是，[**AVLTree的插入删除操作均不需暴力回退到根结点**]()，插入时，若回溯中结点的高度不变，则停止回溯，因为是插入操作，结点高度不变，证明以此结点为根的子树已经平衡；而删除时，若回溯结点高度不变**且**平衡因子绝对值不超过1时停止回溯，因为此时以此结点为根的子树已然平衡，高度不变便停止回溯  
 
@@ -80,7 +81,7 @@ ThrtAVLTree是带有中序threaded的平衡二叉树实现，AVLNode中新增线
 
 在大部分认知中，[RBTree](#6)优于AVLTree，但这个观点好像并不能那么绝对，对于插入，它们的效率对比其实有点依赖输入数据，对于一组顺序的数据来说，RBTree必然优于AVLTree，因为此时AVLTree总是进行单支插入，但如果数据随机，AVLTree发生旋转的概率会大大减少，而RBTree可能需要继续进行着色操作，甚至会因为维护自身特性进行必要的旋转；对于删除，虽然RBTree最多仅需3次旋转，但仍然可能需要进行着色，加之AVLTree也不是总是需要回溯到根结点，所以也不见得一定比AVLTree快。总而言之，对于查询和随机插入较多的环境，AVLTree必然优于RBTree，对于顺序插入又或者比较综合的环境，RBTree一定优于AVLTree?  
 
-AVLTree的删除步骤中为了保持高度平衡可能需要进行旋转操作，但在实现AVLTree的过程中不难发现，如果不是为了时刻维护这个特性，这个旋转操作有点多余，因为下一次或几次的插入或者删除有可能会抵消这个高度差，那么这几次的回溯旋转就完全没有了必要；如果不能抵消，或许可以加入另外一个因子判定何时进行平衡操作？如果将来要对AVLTree进行优化，一定是从这方面下手（RBTree好像就是这样的优化？总感觉还能找到更加简洁的描述和更加高效的实现）  
+AVLTree的删除步骤中为了保持高度平衡可能需要进行旋转操作，但在实现AVLTree的过程中可以发现，如果不是为了时刻维护这个特性，这个旋转操作有点多余，因为下一次或几次的插入或者删除有可能会抵消这个高度差，那么这几次的回溯旋转就完全没有了必要；如果不能抵消，或许可以加入另外一个因子判定何时进行平衡操作？如果将来要对AVLTree进行优化，一定是从这方面下手（RBTree好像就是这样的优化？总感觉还能找到更加简洁的描述和更加高效的实现）  
 
 [**参考链接：**]()&nbsp;[AVL树基础篇](https://mp.weixin.qq.com/s/POX8QV9JFrRcAi-q-sJvOA)&nbsp;&nbsp;[AVL树删除篇](https://mp.weixin.qq.com/s/9no2Ge0hWo1lZHRm_JS0hA)
 ## <span id="6">RBTree</span>
@@ -95,14 +96,15 @@ typedef struct RBNode{
 	struct RBNode* parent;
 	unsigned char color;
 }RBNode;
-typedef bool(*RBKeyCompareFuncT)(const void*, const void*);
-typedef void(*RBForEachFuncT)(const void*, void*);
+
 typedef struct RBTree{
 	RBNode* root;
-	RBKeyCompareFuncT equalFunc;
-	RBKeyCompareFuncT lessFunc;
+	CmnCompareFunc equalFunc;
+	CmnCompareFunc lessFunc;
+	void* tmpRet;
 	size_t keySize;
 	size_t valSize;
+	size_t tree_size;
 }RBTree;
 ```
 红黑树(Red Black Tree)是一棵自平衡的二叉排序树，它具有以下特点：  
@@ -111,7 +113,7 @@ typedef struct RBTree{
 +	红色结点不能路径上相邻
 +	以任意结点为根的子树，所有路径都包含了数量相等的黑色结点
   
-与AVLTree的实现类似，RBTree创建时同样需要传入自定义比较函数和键值大小，RBNode新增父指针parent和颜色标志color，因为插入总是以红色结点插入，所以将红色的标志值定义为0，使结点清零初始化便为红色结点，同时将黑色标志值定义为1，交换颜色的时候异或取反便可；RBTree的起源是从4阶B树得到启发，要彻底理解RBTree最好先熟悉 [B-Tree](#7)  
+与AVLTree的实现类似，RBTree创建时同样需要传入默认或自定义比较函数和键值大小，RBNode新增父指针parent和颜色标志color，因为插入总是以红色结点插入，所以将红色的标志值定义为0，使结点清零初始化便为红色结点，同时将黑色标志值定义为1，交换颜色的时候异或取反便可；RBTree的起源是从4阶B树得到启发，要彻底理解RBTree最好先熟悉 [B-Tree](#7)  
 
 RBTree引理：一棵有N个结点的红黑树高度h<=2log(2, N+1)，证明：  
 
@@ -132,20 +134,19 @@ typedef struct HeaderNode{
 	size_t valSize;
 	int pageSize;
 }HeaderNode;
-typedef ssize_t BNodeST;
+
 typedef struct BNode{
 	off_t* childPointers;
 	void* pKey;
 	void* pValue;
 	off_t selfPointer;//标记这个node在文件的偏移位置,为0时代表新插入的node,还没有写入文件
-	BNodeST size;
+	ssize_t size;
 }BNode;
-typedef bool(*BKeyCompareFuncT)(const void*, const void*);
-typedef void(*BForEachFuncT)(const void*, const void*);
+
 typedef struct BTree{
 	HeaderNode head;
-	BKeyCompareFuncT equalFunc;
-	BKeyCompareFuncT lessFunc;
+	CmnCompareFunc equalFunc;
+	CmnCompareFunc lessFunc;
 	void* tmpRet;
 	int fd;
 	unsigned short maxNC;
@@ -202,7 +203,7 @@ B树插入方法并不唯一，各种方法大同小异，文中实现是采用�
 typedef unsigned short __keynode_size_t;
 typedef unsigned short __value_size_t;
 typedef struct BPMetaNode{
-	unsigned long long rows;//实际数据行数
+	size_t rows;//实际数据行数
 	off_t rootPointer;//根结点指针,初始为-1
 	off_t firstPointer;//第一个叶子结点指针,初始为-1
 	off_t fileSize;//元文件大小
@@ -217,6 +218,7 @@ typedef struct BPMetaNode{
 	__keynode_size_t maxNC;//结点最大关键字数
 	__keynode_size_t minNC;//结点最小关键字数
 }BPMetaNode;
+
 typedef struct BPNode{
 	void* pKey;
 	off_t* childPointers;//分配空间size+1,最后一个为next指针
@@ -224,15 +226,14 @@ typedef struct BPNode{
 	__keynode_size_t size;//结点关键字数
 	unsigned char isLeaf;//0为内部结点,1为叶子结点
 }BPNode;
-typedef bool(*BPKeyCompareFuncT)(const void*, const void*);
-typedef void(*BPForEachFuncT)(const void*, const void*);
+
 typedef struct BPTree{
 	char META_FILENAME[4096];
 	char INDEX_FILENAME[4096];
 	char DATA_FILENAME[4096];
 	BPMetaNode meta;
-	BPKeyCompareFuncT equalFunc;
-	BPKeyCompareFuncT lessFunc;
+	CmnCompareFunc equalFunc;
+	CmnCompareFunc lessFunc;
 	void* tmpRet;
 	char* tmpWriteStr;
 	char* metaMap;//元文件映射
@@ -273,3 +274,5 @@ B+树与B-树的差异：
 5. 合并结点，更新父结点关键字，父结点关键字数-1，对父结点转到步骤2判断
 
 [**参考链接：**]()&nbsp;[B+树介绍](https://zhuanlan.zhihu.com/p/54102723)&nbsp;&nbsp;[B+树插入与删除](https://mp.weixin.qq.com/s/N3kCheEhJZJ1UZ4p7n-OQQ)
+
+## <span id="9">HashTable</span>
