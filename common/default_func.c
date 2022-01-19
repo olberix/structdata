@@ -1,4 +1,5 @@
 #include "common.h"
+#include <math.h>
 
 inline bool default_less_func_int8(const void* basis, const void* rhs) { return *((char*)basis) > *((char*)rhs); }
 inline bool default_less_func_uint8(const void* basis, const void* rhs) { return *((unsigned char*)basis) > *((unsigned char*)rhs); }
@@ -8,6 +9,8 @@ inline bool default_less_func_int32(const void* basis, const void* rhs) { return
 inline bool default_less_func_uint32(const void* basis, const void* rhs) { return *((unsigned int*)basis) > *((unsigned int*)rhs); }
 inline bool default_less_func_int64(const void* basis, const void* rhs) { return *((long long int*)basis) > *((long long int*)rhs); }
 inline bool default_less_func_uint64(const void* basis, const void* rhs) { return *((unsigned long long int*)basis) > *((unsigned long long int*)rhs); }
+inline bool default_less_func_float32(const void* basis, const void* rhs) { return *((float*)basis) - *((float*)rhs) > EPS_FLOAT32; }
+inline bool default_less_func_float64(const void* basis, const void* rhs) { return *((double*)basis) - *((double*)rhs) > EPS_FLOAT64; }
 inline bool default_less_func_string(const void* basis, const void* rhs) { return strcmp(basis, rhs) > 0; }
 inline bool default_equal_func_int8(const void* basis, const void* rhs) { return *((char*)basis) == *((char*)rhs); }
 inline bool default_equal_func_uint8(const void* basis, const void* rhs) { return *((unsigned char*)basis) == *((unsigned char*)rhs); }
@@ -17,6 +20,8 @@ inline bool default_equal_func_int32(const void* basis, const void* rhs) { retur
 inline bool default_equal_func_uint32(const void* basis, const void* rhs) { return *((unsigned int*)basis) == *((unsigned int*)rhs); }
 inline bool default_equal_func_int64(const void* basis, const void* rhs) { return *((long long int*)basis) == *((long long int*)rhs); }
 inline bool default_equal_func_uint64(const void* basis, const void* rhs) { return *((unsigned long long int*)basis) == *((unsigned long long int*)rhs); }
+inline bool default_equal_func_float32(const void* basis, const void* rhs) { return fabsf(*((float*)basis) - *((float*)rhs)) <= EPS_FLOAT32;; }
+inline bool default_equal_func_float64(const void* basis, const void* rhs) { return fabs(*((double*)basis) - *((double*)rhs)) <= EPS_FLOAT64; }
 inline bool default_equal_func_string(const void* basis, const void* rhs) { return !strcmp(basis, rhs); }
 
 inline size_t HASH_SEQ(const unsigned char* stream, size_t length)
@@ -48,4 +53,6 @@ inline size_t default_hash_func_int32(const void* key) { return HASH_SEQ(key, si
 inline size_t default_hash_func_uint32(const void* key) { return HASH_SEQ(key, sizeof(unsigned int)); }
 inline size_t default_hash_func_int64(const void* key) { return HASH_SEQ(key, sizeof(long long int)); }
 inline size_t default_hash_func_uint64(const void* key) { return HASH_SEQ(key, sizeof(unsigned long long int)); }
+inline size_t default_hash_func_float32(const void* key) { return HASH_SEQ(key, sizeof(float)); }
+inline size_t default_hash_func_float64(const void* key) { return HASH_SEQ(key, sizeof(double)); }
 inline size_t default_hash_func_string(const void* key) { return HASH_SEQ(key, strlen(key)); }

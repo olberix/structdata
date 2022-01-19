@@ -229,10 +229,16 @@ static void __insert(HashTable* table, HashEntry entry)
 			break;
 		}
 		case BUCKETTYPE_RBTREE:{
-			size_t _size = RBTree().size(bucket->entry_tree);
-			RBTree().insert(bucket->entry_tree, entry.pKey, &entry);
-			if (_size != RBTree().size(_bkt.bucket.entry_tree))
+			const void* ret = RBTree().at(bucket->entry_tree, entry.pKey);
+			if (ret){
+				HashEntry _entry = TOCONSTANT(HashEntry, ret);
+				FREEENTRY(_entry);
+				RBTree().insert(bucket->entry_tree, entry.pKey, &entry);
+			}
+			else{
+				RBTree().insert(bucket->entry_tree, entry.pKey, &entry);
 				table->elem_count++;
+			}
 			break;
 		}
 		default:{
@@ -311,8 +317,11 @@ static const void* at(HashTable* table, const void* pKey)
 		case BUCKETTYPE_NIL:
 			return NULL;
 		case BUCKETTYPE_ORIGIN:{
-			memcpy(table->tmpRet, _bkt.bucket.entry.pValue, table->valSize);
-			return table->tmpRet;
+			if (table->equalFunc(_bkt.bucket.entry.pKey, pKey)){
+				memcpy(table->tmpRet, _bkt.bucket.entry.pValue, table->valSize);
+				return table->tmpRet;
+			}
+			return NULL;
 		}
 		case BUCKETTYPE_LIST:{
 			DULIST_FOREACH(_bkt.bucket.entry_list, HashEntry, {

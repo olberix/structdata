@@ -98,6 +98,9 @@ static const char* errStr[] = {
 
 #define TOCONSTANT(type, point) (*((type*)(point)))
 
+#define EPS_FLOAT32 1e-6
+#define EPS_FLOAT64 1e-15
+
 //默认比较函数
 extern bool default_less_func_int8(const void*, const void*);
 extern bool default_less_func_uint8(const void*, const void*);
@@ -107,6 +110,8 @@ extern bool default_less_func_int32(const void*, const void*);
 extern bool default_less_func_uint32(const void*, const void*);
 extern bool default_less_func_int64(const void*, const void*);
 extern bool default_less_func_uint64(const void*, const void*);
+extern bool default_less_func_float32(const void*, const void*);
+extern bool default_less_func_float64(const void*, const void*);
 extern bool default_less_func_string(const void*, const void*);
 extern bool default_equal_func_int8(const void*, const void*);
 extern bool default_equal_func_uint8(const void*, const void*);
@@ -116,6 +121,8 @@ extern bool default_equal_func_int32(const void*, const void*);
 extern bool default_equal_func_uint32(const void*, const void*);
 extern bool default_equal_func_int64(const void*, const void*);
 extern bool default_equal_func_uint64(const void*, const void*);
+extern bool default_equal_func_float32(const void*, const void*);
+extern bool default_equal_func_float64(const void*, const void*);
 extern bool default_equal_func_string(const void*, const void*);
 //默认哈希函数
 extern size_t HASH_SEQ(const unsigned char*, size_t);
@@ -127,6 +134,8 @@ extern size_t default_hash_func_int32(const void*);
 extern size_t default_hash_func_uint32(const void*);
 extern size_t default_hash_func_int64(const void*);
 extern size_t default_hash_func_uint64(const void*);
+extern size_t default_hash_func_float32(const void*);
+extern size_t default_hash_func_float64(const void*);
 extern size_t default_hash_func_string(const void*);
 
 typedef size_t(*HashFuncTT)(const void*);
