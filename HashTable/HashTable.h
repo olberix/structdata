@@ -9,6 +9,7 @@
 #define BUCKETTYPE_ORIGIN 0x1
 #define BUCKETTYPE_LIST 0x2
 #define BUCKETTYPE_RBTREE 0x3
+#define LOADFACTOR 0.75f
 
 static const size_t HASHINITSIZE = 8;//哈希表初始长度
 static const size_t TRANSTOTREESIZE = 6;//链表转化为红黑树的元素个数
@@ -38,6 +39,7 @@ typedef struct HashTable{
 	size_t keySize;
 	size_t valSize;
 	size_t table_size;
+	size_t maxLoadFactor;
 	size_t elem_count;
 }HashTable;
 

@@ -14,6 +14,7 @@ static HashTable* create(size_t keySize, size_t valSize, HashFuncTT hashFunc, Cm
 	_ht->keySize = keySize;
 	_ht->valSize = valSize;
 	_ht->table_size = HASHINITSIZE;
+	_ht->maxLoadFactor = HASHINITSIZE * LOADFACTOR;
 	_ht->hashFunc = hashFunc;
 	_ht->lessFunc = lessFunc;
 	_ht->equalFunc = equalFunc;
@@ -116,12 +117,13 @@ static inline void rb_rehash_foreach(const void* key, void* val, void* args)
 
 static void __rehash(HashTable* table)
 {
-	if (table->elem_count < table->table_size)
+	if (table->elem_count < table->maxLoadFactor)
 		return;
 	if (table->table_size < 512)
 		table->table_size *= 8;
 	else
 		table->table_size *= 2;
+	table->maxLoadFactor = table->table_size * LOADFACTOR;
 	SqList* __list = table->list;
 	table->list = SqList().create(sizeof(HashBucket), &(table->table_size));
 	SqList().mem_init(table->list);
