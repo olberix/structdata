@@ -11,7 +11,7 @@
 #define BUCKETTYPE_RBTREE 0x3
 #define LOADFACTOR 0.75f
 
-static const size_t HASHINITSIZE = 8;//哈希表初始长度
+static const size_t HASHINITSIZE = 16;//哈希表初始长度
 static const size_t TRANSTOTREESIZE = 6;//链表转化为红黑树的元素个数
 
 typedef struct HashEntry{

@@ -119,8 +119,8 @@ static void __rehash(HashTable* table)
 {
 	if (table->elem_count < table->maxLoadFactor)
 		return;
-	if (table->table_size < 512)
-		table->table_size *= 8;
+	if (table->table_size < 256)
+		table->table_size *= 4;
 	else
 		table->table_size *= 2;
 	table->maxLoadFactor = table->table_size * LOADFACTOR;
