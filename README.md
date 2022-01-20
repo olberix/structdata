@@ -319,8 +319,8 @@ typedef struct HashTable{
 
 1. 对于一组源数据，散列函数会尽可能使其输出均匀分布，而大多数散列函数的实现都采用了LCG算法，或类似变种
 2. 散列数组的扩容方式大体分为两种：倍数扩充，如MSVC的STL实现和java的HashMap；素数扩充，如SGI-STL3.0和c#的HashTable；在往桶中存放数据的时候，往往需要按照桶的数量再次取模，LCG算法存在周期，而模一个质数能使这个周期达到最大，这也是素数扩充的理论基础；但如果散列函数已经足够随机，模的数是否为质数影响已然不大
-3. 冲突处理，总体分为开放地址法和链地址法；MSVC中实现unordered_map便采用了开放地址法，这种方法可以极大的提高cpu cache命中率，就算在冲突的情况下也能快速得到数据，但如果冲突过多，存取效率会不如链地址法；java的HashMap采用了链地址法，在冲突时会自动转化为链表，在链表元素数目达到8的时候自动转化为红黑树，红黑树元素数目降为6的时候再次转化为链表，中间有一个7的缓冲防止频繁转换
+3. 冲突处理，总体分为开放地址法和链地址法；MSVC中实现unordered_map便采用了开放地址法，这种方法可以极大的提高cpu cache命中率，就算在冲突的情况下也能快速得到数据，但如果冲突过多，存取效率会不如链地址法；jdk1.8的HashMap采用了链地址法，在冲突时会自动转化为链表，在链表元素数目达到8且不执行扩容机制时自动转化为红黑树，红黑树元素数目降为6，在resize或remove满足相应条件时再次转化为链表，中间有一个7的缓冲防止频繁转换
 
-本文HashTable的实现借鉴了以上方法，散列函数用的是MSVC中的_Hash_seq(xstddef:_Hash_seq)，但与其满载扩容不同，这里设定了负载因子为0.75，与java-HashMap一致，散列数组初始长度为16，按照4倍容量扩充，在达到256时按照2倍扩充，类似(xhash:_Check_size)；而冲突处理同样借鉴了java-HashMap，在冲突时转化为链表，元素个数达到6时链表转化为红黑树，但与java-HashMap不同，当转化为红黑树时不会再退化成链表，转化为链表时不会再退化成普通的entry；即使通过删除元素使冲突位置不再冲突，这时候也只是多出一次比较，但却可以避免相互转化的风险  
+本文HashTable的实现借鉴了以上方法，散列函数用的是MSVC中的_Hash_seq(xstddef:_Hash_seq)，但与其满载扩容不同，这里设定了负载因子为0.75，与java-HashMap一致，散列数组初始长度为16，按照4倍容量扩充，在达到256时按照2倍扩充，类似(xhash:_Check_size)；而冲突处理同样借鉴了java-HashMap，在冲突时转化为链表，元素个数达到6时链表转化为红黑树，但又与之不同，当转化为红黑树时不会再退化成链表，转化为链表时不会再退化成普通的entry；即使通过删除元素使冲突位置不再冲突，这时候也只是多出一次比较，但却可以避免相互转化的风险  
 
-[**参考链接：**]()&nbsp;[LCG算法介绍](https://www.cnblogs.com/vancasola/p/9942583.html)&nbsp;&nbsp;[LCG算法深入理解](https://zhuanlan.zhihu.com/p/36301602)&nbsp;&nbsp;[伪随机数发生器](https://www.zhihu.com/question/35365618/answer/991302922)&nbsp;&nbsp;[哈希函数模质数](https://www.cnblogs.com/cryingrain/p/11144225.html)&nbsp;&nbsp;[lua hash函数](https://blog.codingnow.com/2020/05/lua_hash.html)
+[**参考链接：**]()&nbsp;[LCG算法介绍](https://www.cnblogs.com/vancasola/p/9942583.html)&nbsp;&nbsp;[LCG算法深入理解](https://zhuanlan.zhihu.com/p/36301602)&nbsp;&nbsp;[伪随机数发生器](https://www.zhihu.com/question/35365618/answer/991302922)&nbsp;&nbsp;[哈希函数模质数](https://www.cnblogs.com/cryingrain/p/11144225.html)&nbsp;&nbsp;[lua hash函数](https://blog.codingnow.com/2020/05/lua_hash.html)&nbsp;&nbsp;[HashMap中红黑树退化成链表的条件](https://blog.csdn.net/qq_45369827/article/details/114930945)
