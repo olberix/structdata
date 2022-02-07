@@ -1,4 +1,5 @@
 #include "SkipList.h"
+#include <time.h>
 
 static SkipList* create(size_t keySize, CmnCompareFunc equalFunc, CmnCompareFunc lessFunc)
 {
@@ -7,6 +8,7 @@ static SkipList* create(size_t keySize, CmnCompareFunc equalFunc, CmnCompareFunc
 	POINTCREATE_INIT(EMPTYDEF, list->header, void, sizeof(SkipListNode) + sizeof(struct SkipListLevel) * SKIPLIST_MAXLEVEL);
 	SKL_BEGIN(list) = SKL_HEAD(list);
 	SKL_LAST(list) = SKL_END(list);
+	list->keySize = keySize;
 	return list;
 }
 
@@ -30,21 +32,47 @@ static inline void destroy(SkipList** sList)
 	FREE(*sList);
 }
 
+static inline unsigned char __random_level()
+{
+	unsigned char level = 1;
+	while(1.0f * rand() / RAND_MAX <= SKIPLIST_P && level < SKIPLIST_MAXLEVEL)
+		level++;
+	return level;
+}
+
+static inline SkipListNode* __gen_new_node(SkipList* list, const void* pKey)
+{
+	unsigned char nodeLevel = __random_level();
+	POINTCREATE(SkipListNode*, node, SkipListNode, sizeof(SkipListNode) + sizeof(struct SkipListLevel) * nodeLevel);
+	POINTCREATE(EMPTYDEF, node->pKey, void, list->keySize);
+	memcpy(node->pKey, pKey, list->keySize);
+	node->level = nodeLevel;
+	return node;
+}
+
 static void insert(SkipList* list, const void* pKey)
 {
-	SkipListNode* node = list->head;
+	SkipListNode* markPoints[SKIPLIST_MAXLEVEL];
+	for(int i = 0; i < SKIPLIST_MAXLEVEL; i++)
+		markPoints[i] = SKL_HEAD(list);
+
+	SkipListNode* foreNode = SKL_HEAD(list);
 	for (int i = list->level - 1; i >= 0; i--){
 		do{
-			SkipListNode* tmp = node->levelInfo[i].forward;
-			if (tmp != SKL_HEAD(L)){
+			SkipListNode* tmp = foreNode->levelInfo[i].forward;
+			if (tmp != SKL_END(L)){
 				if (list->equalFunc(tmp->pKey, pKey))
-					return NULL;
+					return;
 				if (list->lessFunc(tmp->pKey, pKey))
 					break;
-				node = tmp;
+				foreNode = tmp;
 			}
 		}while(true);
+		markPoints[i] = foreNode;
 	}
+
+	SkipListNode* newNode = __gen_new_node(list, pKey);
+	
 }
 
 void erase(SkipList* list, const void* pKey)

@@ -13,7 +13,7 @@
 typedef struct SkipListNode{
 	void* pKey;
 	struct SkipListNode* backward;
-	int level;
+	unsigned short level;
 	struct SkipListLevel{
 		struct SkipListNode* forward;
 		size_t span;
@@ -23,7 +23,8 @@ typedef struct SkipListNode{
 typedef struct SkipList{
 	SkipListNode* header;
 	size_t length;
-	int level;
+	size_t keySize;
+	unsigned short level;
 }SkipList;
 
 typedef struct SkipListOp{
