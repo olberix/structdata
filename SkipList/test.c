@@ -34,20 +34,27 @@ int main(int argc, char const *argv[])
 	// SkipList().insert(list, &key);
 
 	
-
-	for (int i = 0; i < 10; i++){
+	int range = 100;
+	for (int i = 0; i < range; i += 2){
+		key = i;
+		SkipList().insert(list, &key);
+	}
+	for (int i = range - 1; i >= 0; i -= 2){
 		key = i;
 		SkipList().insert(list, &key);
 	}
 
 
-	puts("=============");
-	SkipList().for_each(list, display, NULL);
-	puts("=============");
-	SkipList().r_for_each(list, display, NULL);
-	puts("=============");
-	SkipList().display_span(list);
+	// puts("=============");
+	// SkipList().for_each(list, display, NULL);
+	// puts("=============");
+	// SkipList().r_for_each(list, display, NULL);
 
+	// for (int i = 0; i < range; i++){
+	// 	const void* ret = SkipList().at(list, i);
+	// 	int _key = TOCONSTANT(int, ret);
+	// 	printf("%d----\n", _key);
+	// }
 
 	SkipList().destroy(&list);
 	return 0;

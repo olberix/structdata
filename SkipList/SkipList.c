@@ -78,47 +78,49 @@ static void insert(SkipList* list, const void* pKey)
 		markPoints[i].span = 0;
 	}
 
-	SkipListNode* leftNode = SKL_HEAD(list);
-	size_t curIdx = 0;
+	SkipListNode* foreNode = SKL_HEAD(list);
+	size_t curLoc = 0;
 	for (int i = list->level - 1; i >= 0; i--){
 		do{
-			SkipListNode* tmp = leftNode->levelInfo[i].forward;
+			SkipListNode* tmp = foreNode->levelInfo[i].forward;
 			if (tmp != SKL_END(list)){
 				if (list->equalFunc(tmp->pKey, pKey))
 					return;
 				if (list->lessFunc(tmp->pKey, pKey))
 					break;
-				leftNode = tmp;
-				curIdx += leftNode->levelInfo[i].span;
+				foreNode = tmp;
+				curLoc += foreNode->levelInfo[i].span;
 			}
 			else
 				break;
 		}while(true);
-		markPoints[i].forward = leftNode;
-		markPoints[i].span = curIdx;
+		markPoints[i].forward = foreNode;
+		markPoints[i].span = curLoc;
 	}
 
-	curIdx++;
-	SkipListNode* rightNode = leftNode->levelInfo[0].forward;
+	if (*((int*)pKey) ==91){
+		printf("%d----\n", curLoc);
+	}
+	curLoc++;
 	SkipListNode* newNode = __gen_new_node(list, pKey);
-	rightNode->backward = newNode;
-	newNode->backward = leftNode;
+	foreNode->levelInfo[0].forward->backward = newNode;
+	newNode->backward = foreNode;
 	for(int i = newNode->level - 1; i >= 0; i--){
 		struct SkipListLevel* _fl = markPoints[i].forward->levelInfo + i;
 		if (_fl->forward){
 			newNode->levelInfo[i].forward = _fl->forward;
 			if (_fl->forward != SKL_END(list))
-				_fl->forward->levelInfo[i].span += (1 - curIdx);
+				_fl->forward->levelInfo[i].span += (1 - curLoc);
 		}
 		else
 			newNode->levelInfo[i].forward = SKL_END(list);
-		newNode->levelInfo[i].span = curIdx - markPoints[i].span;
+		newNode->levelInfo[i].span = curLoc - markPoints[i].span;
 		_fl->forward = newNode;
 	}
 	for(int i = newNode->level; i < list->level; i++){
 		struct SkipListLevel* _fl = markPoints[i].forward->levelInfo + i;
 		if (_fl->forward && _fl->forward != SKL_END(list))
-			markPoints[i].forward->levelInfo[i].span += 1;
+			_fl->span += 1;
 	}
 	if (newNode->level > list->level)
 		list->level = newNode->level;
@@ -137,7 +139,32 @@ void erase_loc(SkipList* list, size_t loc)
 
 const void* at(SkipList* list, size_t loc)
 {
+	if (loc >= list->length)
+		return NULL;
 
+	SkipListNode* node = SKL_HEAD(list);
+	loc++;
+	size_t curLoc = 0;
+	for (int i = list->level - 1; i >= 0; i--){
+		do{
+			SkipListNode* tmp = node->levelInfo[i].forward;
+			if (tmp != SKL_END(list)){
+				size_t tmpLoc = curLoc + tmp->levelInfo[i].span;
+				if (tmpLoc == loc)
+					return tmp->pKey;
+				else if (tmpLoc > loc)
+					break;
+				else{
+					node = tmp;
+					curLoc = tmpLoc;
+				}
+			}
+			else
+				break;
+		}while(true);
+	}
+
+	return NULL;
 }
 
 long long find(SkipList* list, const void* pKey)
