@@ -9,6 +9,8 @@ static SkipList* create(size_t keySize, CmnCompareFunc equalFunc, CmnCompareFunc
 	SKL_BEGIN(list) = SKL_HEAD(list);
 	SKL_LAST(list) = SKL_END(list);
 	list->keySize = keySize;
+	list->equalFunc = equalFunc;
+	list->lessFunc = lessFunc;
 	return list;
 }
 
@@ -34,10 +36,17 @@ static inline void destroy(SkipList** sList)
 
 static inline unsigned char __random_level()
 {
-	unsigned char level = 1;
-	while(1.0f * rand() / RAND_MAX <= SKIPLIST_P && level < SKIPLIST_MAXLEVEL)
-		level++;
-	return level;
+	// unsigned char level = 1;
+	// while((1.0f * rand()) / RAND_MAX <= SKIPLIST_P && level < SKIPLIST_MAXLEVEL)
+	// 	level++;
+	// printf("level:%d\n", level);
+	static unsigned char levelArry[21] = {1, 1, 8, 10, 5, 32, 4, 6, 2, 32, 32, 10, 10, 20, 20, 25, 26, 13, 14, 16, 15};
+	static int i = -1;
+	i++;
+	if (i == 21)
+		i = 0;
+	return levelArry[i];
+	// return level;
 }
 
 static inline SkipListNode* __gen_new_node(SkipList* list, const void* pKey)
@@ -50,29 +59,70 @@ static inline SkipListNode* __gen_new_node(SkipList* list, const void* pKey)
 	return node;
 }
 
+void display_span(SkipList* list)
+{
+	for(SkipListNode* node = SKL_BEGIN(list); node != SKL_END(list); node = node->levelInfo[0].forward)
+	{
+		for(int i = node->level - 1; i >= 0; i--){
+			printf("----%d\n", node->levelInfo[i].span);
+		}
+		puts("++++++++++++++++++++++++++");
+	}
+}
+
 static void insert(SkipList* list, const void* pKey)
 {
-	SkipListNode* markPoints[SKIPLIST_MAXLEVEL];
-	for(int i = 0; i < SKIPLIST_MAXLEVEL; i++)
-		markPoints[i] = SKL_HEAD(list);
+	struct SkipListLevel markPoints[SKIPLIST_MAXLEVEL];
+	for(int i = 0; i < SKIPLIST_MAXLEVEL; i++){
+		markPoints[i].forward = SKL_HEAD(list);
+		markPoints[i].span = 0;
+	}
 
-	SkipListNode* foreNode = SKL_HEAD(list);
+	SkipListNode* leftNode = SKL_HEAD(list);
+	size_t curIdx = 0;
 	for (int i = list->level - 1; i >= 0; i--){
 		do{
-			SkipListNode* tmp = foreNode->levelInfo[i].forward;
-			if (tmp != SKL_END(L)){
+			SkipListNode* tmp = leftNode->levelInfo[i].forward;
+			if (tmp != SKL_END(list)){
 				if (list->equalFunc(tmp->pKey, pKey))
 					return;
 				if (list->lessFunc(tmp->pKey, pKey))
 					break;
-				foreNode = tmp;
+				leftNode = tmp;
+				curIdx += leftNode->levelInfo[i].span;
 			}
+			else
+				break;
 		}while(true);
-		markPoints[i] = foreNode;
+		markPoints[i].forward = leftNode;
+		markPoints[i].span = curIdx;
 	}
 
+	curIdx++;
+	SkipListNode* rightNode = leftNode->levelInfo[0].forward;
 	SkipListNode* newNode = __gen_new_node(list, pKey);
-	
+	rightNode->backward = newNode;
+	newNode->backward = leftNode;
+	for(int i = newNode->level - 1; i >= 0; i--){
+		struct SkipListLevel* _fl = markPoints[i].forward->levelInfo + i;
+		if (_fl->forward){
+			newNode->levelInfo[i].forward = _fl->forward;
+			if (_fl->forward != SKL_END(list))
+				_fl->forward->levelInfo[i].span += (1 - curIdx);
+		}
+		else
+			newNode->levelInfo[i].forward = SKL_END(list);
+		newNode->levelInfo[i].span = curIdx - markPoints[i].span;
+		_fl->forward = newNode;
+	}
+	for(int i = newNode->level; i < list->level; i++){
+		struct SkipListLevel* _fl = markPoints[i].forward->levelInfo + i;
+		if (_fl->forward && _fl->forward != SKL_END(list))
+			markPoints[i].forward->levelInfo[i].span += 1;
+	}
+	if (newNode->level > list->level)
+		list->level = newNode->level;
+	list->length++;
 }
 
 void erase(SkipList* list, const void* pKey)
@@ -102,12 +152,16 @@ static inline size_t length(SkipList* list)
 
 void for_each(SkipList* list, SequenceForEachFunc_Set func, void* args)
 {
-
+	size_t index = 0;
+	for(SkipListNode* node = SKL_BEGIN(list); node != SKL_END(list); node = node->levelInfo[0].forward, index++)
+		func(index, node->pKey, args);
 }
 
 void r_for_each(SkipList* list, SequenceForEachFunc_Set func, void* args)
 {
-
+	size_t index = list->length - 1;
+	for(SkipListNode* node = SKL_LAST(list); node != SKL_HEAD(list); node = node->backward, index--)
+		func(index, node->pKey, args);
 }
 
 inline const SkipListOp* GetSkipListOpStruct()
@@ -124,6 +178,7 @@ inline const SkipListOp* GetSkipListOpStruct()
 		.length = length,
 		.for_each = for_each,
 		.r_for_each = r_for_each,
+		.display_span = display_span,
 	};
 	return &OpList;
 }
