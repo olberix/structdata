@@ -16,15 +16,19 @@ static SkipList* create(size_t keySize, CmnCompareFunc equalFunc, CmnCompareFunc
 
 static inline void clear(SkipList* list)
 {
+	if (list->length == 0)
+		return;
 	for(SkipListNode* node = SKL_LAST(list); node != SKL_HEAD(list);){
 		SkipListNode* tmpNode = node;
 		node = node->backward;
 		FREE(tmpNode->pKey);
 		FREE(tmpNode);
 	}
+	memset(SKL_HEAD(list)->levelInfo, 0, sizeof(struct SkipListLevel) * list->level);
 	SKL_BEGIN(list) = SKL_HEAD(list);
 	SKL_LAST(list) = SKL_END(list);
 	list->length = 0;
+	list->level = 0;
 }
 
 static inline void destroy(SkipList** sList)
@@ -36,10 +40,16 @@ static inline void destroy(SkipList** sList)
 
 static inline unsigned char __random_level()
 {
-	unsigned char level = 1;
-	while((1.0f * rand()) / RAND_MAX <= SKIPLIST_P && level < SKIPLIST_MAXLEVEL)
-		level++;
-	return level;
+	// unsigned char level = 1;
+	// while((1.0f * rand()) / RAND_MAX <= SKIPLIST_P && level < SKIPLIST_MAXLEVEL)
+	// 	level++;
+	// return level;
+	static unsigned char levels[25] = {1, 1, 5, 5, 9, 18, 17, 14, 14, 32, 32, 30, 29, 29, 9, 9, 5, 8, 11, 13, 32, 28, 27, 23, 6};
+	static int idx = -1;
+	idx++;
+	if (idx == 25)
+		idx = 0;
+	return levels[idx];
 }
 
 static inline SkipListNode* __gen_new_node(SkipList* list, const void* pKey)
@@ -50,17 +60,6 @@ static inline SkipListNode* __gen_new_node(SkipList* list, const void* pKey)
 	memcpy(node->pKey, pKey, list->keySize);
 	node->level = nodeLevel;
 	return node;
-}
-
-void display_span(SkipList* list)
-{
-	for(SkipListNode* node = SKL_BEGIN(list); node != SKL_END(list); node = node->levelInfo[0].forward)
-	{
-		for(int i = node->level - 1; i >= 0; i--){
-			printf("----%llu\n", node->levelInfo[i].span);
-		}
-		puts("++++++++++++++++++++++++++");
-	}
 }
 
 static void insert(SkipList* list, const void* pKey)
@@ -99,9 +98,8 @@ static void insert(SkipList* list, const void* pKey)
 		struct SkipListLevel* _fl = markPoints[i].forward->levelInfo + i;
 		if (_fl->forward){
 			newNode->levelInfo[i].forward = _fl->forward;
-			if (_fl->forward != SKL_END(list)){
+			if (_fl->forward != SKL_END(list))
 				_fl->forward->levelInfo[i].span += (markPoints[i].span + 1 - curLoc);
-			}
 		}
 		else
 			newNode->levelInfo[i].forward = SKL_END(list);
@@ -111,30 +109,138 @@ static void insert(SkipList* list, const void* pKey)
 	for(int i = newNode->level; i < list->level; i++){
 		struct SkipListLevel* _fl = markPoints[i].forward->levelInfo + i;
 		if (_fl->forward && _fl->forward != SKL_END(list))
-			_fl->forward->levelInfo[i].span += 1;
+			_fl->forward->levelInfo[i].span++;
 	}
 	if (newNode->level > list->level)
 		list->level = newNode->level;
 	list->length++;
 }
 
-void erase(SkipList* list, const void* pKey)
+static void erase(SkipList* list, const void* pKey)
 {
+	SkipListNode* markNodes[SKIPLIST_MAXLEVEL];
+	SkipListNode* node = SKL_HEAD(list);
+	for (int i = list->level - 1; i >= 0; i--){
+		while(true){
+			SkipListNode* tmp = node->levelInfo[i].forward;
+			if (tmp != SKL_END(list)){
+				if (list->equalFunc(tmp->pKey, pKey)){
+					markNodes[i] = node;
+					node = tmp;
+					for (i--; i >= 0; i--){
+						SkipListNode* _n = markNodes[i + 1];
+						while(_n->levelInfo[i].forward != node)
+							_n = _n->levelInfo[i].forward;
+						markNodes[i] = _n;
+					}
+					break;
+				}
+				if (list->lessFunc(tmp->pKey, pKey)){
+					markNodes[i] = node;
+					break;
+				}
+				node = tmp;
+			}
+			else{
+				markNodes[i] = node;
+				break;
+			}
+		}
+	}
+	if (node == SKL_END(list) || !list->equalFunc(node->pKey, pKey))
+		return;
 
+	node->levelInfo[0].forward->backward = node->backward;
+	for(int i = node->level - 1; i >= 0; i--){
+		SkipListNode* _ff = node->levelInfo[i].forward;
+		if (markNodes[i] == SKL_HEAD(list) && _ff == SKL_END(list)){
+			markNodes[i]->levelInfo[i].forward = NULL;
+			list->level--;
+		}
+		else
+			markNodes[i]->levelInfo[i].forward = _ff;
+		if (_ff != SKL_END(list))
+			_ff->levelInfo[i].span += (node->levelInfo[i].span - 1);
+	}
+	for(int i = node->level; i < list->level; i++){
+		SkipListNode* _ff = markNodes[i]->levelInfo[i].forward;
+		if (_ff != SKL_END(list))
+			_ff->levelInfo[i].span--;
+	}
+	list->length--;
+
+	FREE(node->pKey);
+	FREE(node);
 }
 
-void erase_loc(SkipList* list, size_t loc)
+static void erase_loc(SkipList* list, size_t loc)
 {
+	if (loc >= list->length)
+		return;
 
+	loc++;
+	SkipListNode* markNodes[SKIPLIST_MAXLEVEL];
+	SkipListNode* node = SKL_HEAD(list);
+	size_t curLoc = 0;
+	for (int i = list->level - 1; i >= 0; i--){
+		if (curLoc == loc){
+			SkipListNode* _n = markNodes[i + 1];
+			while(_n->levelInfo[i].forward != node)
+				_n = _n->levelInfo[i].forward;
+			markNodes[i] = _n;
+		}
+		else
+			while(true){
+				SkipListNode* tmp = node->levelInfo[i].forward;
+				if (tmp != SKL_END(list)){
+					size_t tmpLoc = curLoc + tmp->levelInfo[i].span;
+					if (tmpLoc > loc){
+						markNodes[i] = node;
+						break;
+					}
+					markNodes[i] = node;
+					node = tmp;
+					curLoc = tmpLoc;
+					if (curLoc == loc)
+						break;
+				}
+				else{
+					markNodes[i] = node;
+					break;
+				}
+			}
+	}
+
+	node->levelInfo[0].forward->backward = node->backward;
+	for(int i = node->level - 1; i >= 0; i--){
+		SkipListNode* _ff = node->levelInfo[i].forward;
+		if (markNodes[i] == SKL_HEAD(list) && _ff == SKL_END(list)){
+			markNodes[i]->levelInfo[i].forward = NULL;
+			list->level--;
+		}
+		else
+			markNodes[i]->levelInfo[i].forward = _ff;
+		if (_ff != SKL_END(list))
+			_ff->levelInfo[i].span += (node->levelInfo[i].span - 1);
+	}
+	for(int i = node->level; i < list->level; i++){
+		SkipListNode* _ff = markNodes[i]->levelInfo[i].forward;
+		if (_ff != SKL_END(list))
+			_ff->levelInfo[i].span--;
+	}
+	list->length--;
+
+	FREE(node->pKey);
+	FREE(node);
 }
 
-const void* at(SkipList* list, size_t loc)
+static const void* at(SkipList* list, size_t loc)
 {
 	if (loc >= list->length)
 		return NULL;
 
-	SkipListNode* node = SKL_HEAD(list);
 	loc++;
+	SkipListNode* node = SKL_HEAD(list);
 	size_t curLoc = 0;
 	for (int i = list->level - 1; i >= 0; i--){
 		do{
@@ -158,9 +264,27 @@ const void* at(SkipList* list, size_t loc)
 	return NULL;
 }
 
-long long find(SkipList* list, const void* pKey)
+static long long find(SkipList* list, const void* pKey)
 {
+	SkipListNode* node = SKL_HEAD(list);
+	size_t loc = 0;
+	for(int i = list->level - 1; i >= 0; i--){
+		do{
+			SkipListNode* tmp = node->levelInfo[i].forward;
+			if (tmp != SKL_END(list)){
+				if (list->equalFunc(tmp->pKey, pKey))
+					return loc + tmp->levelInfo[i].span - 1;
+				if (list->lessFunc(tmp->pKey, pKey))
+					break;
+				node = tmp;
+				loc += tmp->levelInfo[i].span;
+			}
+			else
+				break;
+		}while(true);
+	}
 
+	return -1;
 }
 
 static inline size_t length(SkipList* list)
@@ -168,15 +292,19 @@ static inline size_t length(SkipList* list)
 	return list->length;
 }
 
-void for_each(SkipList* list, SequenceForEachFunc_Set func, void* args)
+static void for_each(SkipList* list, SequenceForEachFunc_Set func, void* args)
 {
+	if (list->length == 0)
+		return;
 	size_t index = 0;
 	for(SkipListNode* node = SKL_BEGIN(list); node != SKL_END(list); node = node->levelInfo[0].forward, index++)
 		func(index, node->pKey, args);
 }
 
-void r_for_each(SkipList* list, SequenceForEachFunc_Set func, void* args)
+static void r_for_each(SkipList* list, SequenceForEachFunc_Set func, void* args)
 {
+	if (list->length == 0)
+		return;
 	size_t index = list->length - 1;
 	for(SkipListNode* node = SKL_LAST(list); node != SKL_HEAD(list); node = node->backward, index--)
 		func(index, node->pKey, args);
@@ -196,7 +324,6 @@ inline const SkipListOp* GetSkipListOpStruct()
 		.length = length,
 		.for_each = for_each,
 		.r_for_each = r_for_each,
-		.display_span = display_span,
 	};
 	return &OpList;
 }
