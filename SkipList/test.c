@@ -11,9 +11,9 @@ int main(int argc, char const *argv[])
 	// srand(time(NULL));
 	SkipList* list = SkipList().create(sizeof(int), default_equal_func_int32, default_less_func_int32);
 	
-	for (int times = 0; times < 10; times++){
+	for (int times = 0; times < 100; times++){
 		int key;
-		int range = 24000;
+		int range = 120000;
 		for (int i = 0; i < range; i += 3){
 			key = i;
 			SkipList().insert(list, &key);
@@ -49,7 +49,7 @@ int main(int argc, char const *argv[])
 			}
 		}
 
-		for(int i = 0; i < range - 1; i++){
+		for(int i = 0; i < range; i++){
 			if (SkipList().length(list) != 0){
 				if (i % 3 == 2){
 					int idx = rand() % SkipList().length(list);
@@ -71,7 +71,7 @@ int main(int argc, char const *argv[])
 	SkipList().clear(list);
 
 	int key;
-	int range = 51;
+	int range = 510;
 	for (int i = 0; i < range; i += 3){
 		key = i;
 		SkipList().insert(list, &key);
@@ -89,19 +89,19 @@ int main(int argc, char const *argv[])
 		SkipList().insert(list, &key);
 	}
 
-	for (int i = 0; i <= range; i += 2){
+	for (int i = 0; i <= range / 2; i += 2){
+		key = i;
+		SkipList().erase(list, &key);
+	}
+	for (int i = range - 2; i >= range / 2; i -= 2){
 		key = i;
 		SkipList().erase(list, &key);
 	}
 
-	// range = SkipList().length(list);
-	// for (int i = 0; i <= range / 2; i++){
-	// 	int idx = rand() % SkipList().length(list);
-	// 	SkipList().erase_loc(list, idx);
-	// }
 	for (int i = 0; i <= range / 2; i+=2){
-		int idx = rand() % SkipList().length(list);
-		SkipList().erase_loc(list, idx);
+		// int idx = rand() % SkipList().length(list);
+		// SkipList().erase_loc(list, idx);
+		SkipList().erase_loc(list, 0);
 	}
 
 
