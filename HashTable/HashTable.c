@@ -64,6 +64,7 @@ static inline void destroy(HashTable** stable)
 	clear(*stable);
 	SqList().destroy(&((*stable)->list));
 	FREE((*stable)->tmpRet);
+	FREE(*stable);
 }
 
 typedef struct Hash2RbFA{
