@@ -57,7 +57,7 @@
 // 	}
 // 	puts("check ok---------------------------");
 
-// 	printf("size:%lld------------------\n", HashTable().size(table));
+// 	printf("size:%lu------------------\n", HashTable().size(table));
 // 	HashTable().clear(table);
 // 	range = 10;
 // 	for (int j = 0; j < range; j++){
@@ -70,7 +70,7 @@
 // 	puts("++++++++++++++");
 // 	HashTable().for_each(table, display, NULL);
 
-// 	printf("size:%lld------------------\n", HashTable().size(table));
+// 	printf("size:%lu------------------\n", HashTable().size(table));
 
 // 	HashTable().destroy(&table);
 // 	return 0;
@@ -104,13 +104,13 @@ bool ttkey_less_func(const void* lhs, const void* rhs)
 {
 	const TTKEY* _lhs = lhs;
 	const TTKEY* _rhs = rhs;
-	if (_lhs->a != _lhs->a)
+	if (fabs(_lhs->a - _rhs->a) > EPS_FLOAT64)
 		return _lhs->a > _rhs->a;
 	else{
 		if (_lhs->b != _rhs->b)
 			return _lhs->b > _rhs->b;
 		else
-			return _lhs->c - _rhs->c > EPS_FLOAT64;
+			return _lhs->c > _rhs->c;
 	}
 }
 
@@ -118,7 +118,7 @@ bool ttkey_equal_func(const void* lhs, const void* rhs)
 {
 	const TTKEY* _lhs = lhs;
 	const TTKEY* _rhs = rhs;
-	return _lhs->a == _rhs->a && _lhs->b == _lhs->b && fabs(_lhs->c - _lhs->c) <= EPS_FLOAT64;
+	return fabs(_lhs->a - _rhs->a) <= EPS_FLOAT64 && _lhs->b == _rhs->b && _lhs->c == _rhs->c;
 }
 
 int main(int argc, char const *argv[])
