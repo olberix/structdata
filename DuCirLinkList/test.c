@@ -10,7 +10,7 @@ typedef struct StC{
 void display(size_t key, void* elem, void* args)
 {
 	StC* tmp = (StC*)elem;
-	printf("[%d]\t%d\t\t%lf\n", key, tmp->a, tmp->b);
+	printf("[%lu]\t%d\t\t%lf\n", key, tmp->a, tmp->b);
 }
 
 void multi(size_t key, void* elem, void* args)
@@ -105,10 +105,10 @@ int main()
 	a = 15;
 	DucList().insert(list, 0, &a);
 	DULIST_FOREACH(list, int, {
-		printf("[%d]\t%d\n", key, value);
+		printf("[%lu]\t%d\n", key, value);
 	});
 	DULIST_FOREACH_REVERSE(list, int, {
-		printf("[%d]\t%d\n", key, value);
+		printf("[%lu]\t%d\n", key, value);
 	});
 	a = 123;
 	DucList().change(list, 0, &a);

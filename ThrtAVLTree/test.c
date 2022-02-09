@@ -60,13 +60,13 @@ int main()
 		val.a = arry[i];
 		AVLTree().insert(tree, &key, &val);
 	}
-	printf("tree size:%llu------\n", AVLTree().size(tree));
+	printf("tree size:%lu------\n", AVLTree().size(tree));
 
 	for (size_t i = sizeof(arry) / sizeof(int) - 1; i >=5; i--){
 		key.a = arry[i];
 		AVLTree().erase(tree, &key);
 	}
-	printf("tree size:%llu------\n", AVLTree().size(tree));
+	printf("tree size:%lu------\n", AVLTree().size(tree));
 
 	key.a = 10;
 	val.a = 10555;
@@ -105,7 +105,7 @@ int main()
 	AVLTree().level_order_traverse(tree, foreach, NULL);
 	printf("%s\n", "===============================");
 	AVLTree().in_order_traverse_thrt(tree, foreach, NULL);
-	printf("tree size:%llu------\n", AVLTree().size(tree));
+	printf("tree size:%lu------\n", AVLTree().size(tree));
 	AVLTree().destroy(&tree);
 	return 0;
 }

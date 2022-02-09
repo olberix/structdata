@@ -43,14 +43,14 @@ int main()
 		puts("not empty");
 
 	SQSTACK_FOREACH(stack, StB, {
-		printf("%d\t%d\t%f\t%f\n", key, value.a, value.b, value.c);
+		printf("%lu\t%d\t%f\t%f\n", key, value.a, value.b, value.c);
 	});
 	SQSTACK_FOREACH_REVERSE(stack, StB, {
-		printf("%d\t%d\t%f\t%f\n", key, value.a, value.b, value.c);
+		printf("%lu\t%d\t%f\t%f\n", key, value.a, value.b, value.c);
 	});
 
 	SqStack().destroy(&stack);
-	printf("%d\n", stack);
+	printf("%p\n", stack);
 
 	return 0;
 }

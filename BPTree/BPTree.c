@@ -780,8 +780,8 @@ static BPTree* rebuild(BPTree** sbt)
 
 	unsigned long long _rows = rows(newBt);
 	unsigned long long _t_rows = lseek(newBt->fdData, 0, SEEK_END) / DATA_PAGESIZE * VALUECOUNT_MAX;
-	printf("before rebuild, used rows:%ld, total rows:%ld, usage:%.2f%\n", __rows, __t_rows, __rows * 100.0f / __t_rows);
-	printf("after rebuild, used rows:%ld, total rows:%ld, usage:%.2f%\n", _rows, _t_rows, _rows * 100.0f / _t_rows);
+	printf("before rebuild, used rows:%llu, total rows:%llu, usage:%.2f%%\n", __rows, __t_rows, __rows * 100.0f / __t_rows);
+	printf("after rebuild, used rows:%llu, total rows:%llu, usage:%.2f%%\n", _rows, _t_rows, _rows * 100.0f / _t_rows);
 
 	return newBt;
 }

@@ -9,7 +9,7 @@ typedef struct StA{
 void display(size_t key, void* elem, void* args)
 {
 	StA* tmp = (StA*)elem;
-	printf("[%d]\t%d\t%lf\n", key, tmp->a, tmp->b);
+	printf("[%lu]\t%d\t%lf\n", key, tmp->a, tmp->b);
 }
 
 void multi(size_t key, void* elem, void* args)
@@ -52,17 +52,17 @@ int main()
 	// SqList().for_each(list, &display, NULL);
 	puts("++++++++++++++++++++++++++++++++");
 	SQLIST_FOREACH(list, StA, {
-		printf("[%d]\t%d\t%lf\n", key, value.a, value.b);
+		printf("[%lu]\t%d\t%lf\n", key, value.a, value.b);
 	});
 	tmp.a = 123456789;
 	SqList().change(list, 0, &tmp);
 	puts("++++++++++++++++++++++++++++++++");
 	SQLIST_FOREACH_REVERSE(list, StA, {
-		printf("[%d]\t%d\t%lf\n", key, value.a, value.b);
+		printf("[%lu]\t%d\t%lf\n", key, value.a, value.b);
 	});
 	// puts("++++++++++++++++++++++++++++++++");
 	// SQLIST_FOREACH_REVERSE(list, StA, {
-	// 	printf("[%d]\t%d\t%lf\n", key, value.a, value.b);
+	// 	printf("[%lu]\t%d\t%lf\n", key, value.a, value.b);
 	// });
 
 	// const StA* res = SqList().at(list, 0);

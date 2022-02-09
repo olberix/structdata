@@ -20,11 +20,11 @@ int main(int argc, char const *argv[])
 	// printf("%d\t%c\n", tmp.a, tmp.b);
 
 	DLQUEUE_FOREACH(queue, StD, {
-		printf("%d\t%d\t%c\n", key, value.a, value.b);
+		printf("%lu\t%d\t%c\n", key, value.a, value.b);
 	});
 
 	DLQUEUE_FOREACH_REVERSE(queue, StD, {
-		printf("%d\t%d\t%c\n", key, value.a, value.b);
+		printf("%lu\t%d\t%c\n", key, value.a, value.b);
 	});
 
 	return 1;

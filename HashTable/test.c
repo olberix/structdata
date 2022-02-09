@@ -92,7 +92,7 @@ void display(const void* key, void* val, void* args)
 {
 	const TTKEY* _key = key;
 	const TTVALUE* _val = val;
-	printf("key:%.8lf\t%d\t%c\tvalue:%lld\t%.8lf\t%s\n", _key->a, _key->b, _key->c, _val->a, _val->b, _val->c);
+	printf("key:%.8lf\t%ld\t%c\tvalue:%lld\t%.8lf\t%s\n", _key->a, _key->b, _key->c, _val->a, _val->b, _val->c);
 }
 
 size_t TTKEY_HASH(const void* key){
@@ -194,7 +194,7 @@ int main(int argc, char const *argv[])
 
 		printf("times:%d done-----\n", j);
 	}
-	printf("size:%lld------------------\n", HashTable().size(table));
+	printf("size:%ld------------------\n", HashTable().size(table));
 	puts("check begin---------------------------");
 	for (int i = 0; i < range; i++){
 		key.a = i + 0.555555;
@@ -212,7 +212,7 @@ int main(int argc, char const *argv[])
 		}
 		TTVALUE val = TOCONSTANT(TTVALUE, ret);
 		if (val.a != key.b){
-			printf("integer unequal------%d %d %lld\n", i, key.b, val.a);
+			printf("integer unequal------%d %ld %lld\n", i, key.b, val.a);
 			exit(-1);
 		}
 		if (fabs(key.a-val.b) > EPS_FLOAT64){
