@@ -40,16 +40,10 @@ static inline void destroy(SkipList** sList)
 
 static inline unsigned char __random_level()
 {
-	// unsigned char level = 1;
-	// while((1.0f * rand()) / RAND_MAX <= SKIPLIST_P && level < SKIPLIST_MAXLEVEL)
-	// 	level++;
-	// return level;
-	static unsigned char levels[25] = {1, 1, 5, 5, 9, 18, 17, 14, 14, 32, 32, 30, 29, 29, 9, 9, 5, 8, 11, 13, 32, 28, 27, 23, 6};
-	static int idx = -1;
-	idx++;
-	if (idx == 25)
-		idx = 0;
-	return levels[idx];
+	unsigned char level = 1;
+	while((1.0f * rand()) / RAND_MAX <= SKIPLIST_P && level < SKIPLIST_MAXLEVEL)
+		level++;
+	return level;
 }
 
 static inline SkipListNode* __gen_new_node(SkipList* list, const void* pKey)
