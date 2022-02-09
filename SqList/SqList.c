@@ -44,7 +44,8 @@ static inline void CHECK_REALLOC(SqList* pList)
 
 static void insert(SqList* pList, size_t loc, const void* elem)
 {
-	CONDCHECK(loc <= pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
+	if (loc > pList->length)
+		return;
 	CHECK_REALLOC(pList);
 	size_t e_S = pList->e_S;
 	void* locAddr = pList->pElems + loc * e_S;
@@ -60,19 +61,22 @@ static inline void push_back(SqList* pList, const void* elem)
 
 static inline void change(SqList* pList, size_t loc, const void* elem)
 {
-	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
+	if (loc >= pList->length)
+		return;
 	memcpy(pList->pElems + loc * pList->e_S, elem, pList->e_S);
 }
 
 static inline void change_unsafe(SqList* pList, size_t loc, const void* elem)
 {
-	CONDCHECK(loc < pList->size, STATUS_INVALIDINDEX, __FILE__, __LINE__);
+	if (loc >= pList->size)
+		return;
 	memcpy(pList->pElems + loc * pList->e_S, elem, pList->e_S);
 }
 
 static const void* erase(SqList* pList, size_t loc)
 {
-	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
+	if (loc >= pList->length)
+		return NULL;
 	void* locAddr = pList->pElems + loc * pList->e_S;
 	memcpy(pList->tmpRet, locAddr, pList->e_S);
 	memmove(locAddr, locAddr + pList->e_S, pList->e_S * (pList->length - 1 - loc));
@@ -82,13 +86,15 @@ static const void* erase(SqList* pList, size_t loc)
 
 static inline const void* at(SqList* pList, size_t loc)
 {
-	CONDCHECK(loc < pList->length, STATUS_INVALIDINDEX, __FILE__, __LINE__);
+	if (loc >= pList->length)
+		return NULL;
 	return pList->pElems + loc * pList->e_S;
 }
 
 static inline const void* at_unsafe(SqList* pList, size_t loc)
 {
-	CONDCHECK(loc < pList->size, STATUS_INVALIDINDEX, __FILE__, __LINE__);
+	if (loc >= pList->size)
+		return NULL;
 	return pList->pElems + loc * pList->e_S;
 }
 
@@ -117,14 +123,16 @@ static void reverse(SqList* pList)
 
 static inline void for_each(SqList* pList, SequenceForEachFunc_Mutable func, void* args)
 {
-	CONDCHECK(pList->length != 0, STATUS_NOELEM, __FILE__, __LINE__);
+	if (pList->length == 0)
+		return;
 	for (size_t i = 0; i < pList->length; i++)
 		func(i, pList->pElems + i * pList->e_S, args);
 }
 
 static inline void r_for_each(SqList* pList, SequenceForEachFunc_Mutable func, void* args)
 {
-	CONDCHECK(pList->length != 0, STATUS_NOELEM, __FILE__, __LINE__);
+	if (pList->length == 0)
+		return;
 	for (size_t i = pList->length; i >= 1; i--)/*if i >= 0, unsigned arith will overflow*/
 		func(i - 1, pList->pElems + (i - 1) * pList->e_S, args);
 }
