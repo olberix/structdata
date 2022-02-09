@@ -55,6 +55,7 @@ int main(int argc, char const *argv[])
 	// 	int _key = TOCONSTANT(int, ret);
 	// 	printf("%d----\n", _key);
 	// }
+	SkipList().display_span(list);
 
 	SkipList().destroy(&list);
 	return 0;

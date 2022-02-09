@@ -36,17 +36,10 @@ static inline void destroy(SkipList** sList)
 
 static inline unsigned char __random_level()
 {
-	// unsigned char level = 1;
-	// while((1.0f * rand()) / RAND_MAX <= SKIPLIST_P && level < SKIPLIST_MAXLEVEL)
-	// 	level++;
-	// printf("level:%d\n", level);
-	static unsigned char levelArry[21] = {1, 1, 8, 10, 5, 32, 4, 6, 2, 32, 32, 10, 10, 20, 20, 25, 26, 13, 14, 16, 15};
-	static int i = -1;
-	i++;
-	if (i == 21)
-		i = 0;
-	return levelArry[i];
-	// return level;
+	unsigned char level = 1;
+	while((1.0f * rand()) / RAND_MAX <= SKIPLIST_P && level < SKIPLIST_MAXLEVEL)
+		level++;
+	return level;
 }
 
 static inline SkipListNode* __gen_new_node(SkipList* list, const void* pKey)
@@ -64,7 +57,7 @@ void display_span(SkipList* list)
 	for(SkipListNode* node = SKL_BEGIN(list); node != SKL_END(list); node = node->levelInfo[0].forward)
 	{
 		for(int i = node->level - 1; i >= 0; i--){
-			printf("----%d\n", node->levelInfo[i].span);
+			printf("----%llu\n", node->levelInfo[i].span);
 		}
 		puts("++++++++++++++++++++++++++");
 	}
@@ -98,9 +91,6 @@ static void insert(SkipList* list, const void* pKey)
 		markPoints[i].span = curLoc;
 	}
 
-	if (*((int*)pKey) ==91){
-		printf("%d----\n", curLoc);
-	}
 	curLoc++;
 	SkipListNode* newNode = __gen_new_node(list, pKey);
 	foreNode->levelInfo[0].forward->backward = newNode;
@@ -109,8 +99,9 @@ static void insert(SkipList* list, const void* pKey)
 		struct SkipListLevel* _fl = markPoints[i].forward->levelInfo + i;
 		if (_fl->forward){
 			newNode->levelInfo[i].forward = _fl->forward;
-			if (_fl->forward != SKL_END(list))
-				_fl->forward->levelInfo[i].span += (1 - curLoc);
+			if (_fl->forward != SKL_END(list)){
+				_fl->forward->levelInfo[i].span += (markPoints[i].span + 1 - curLoc);
+			}
 		}
 		else
 			newNode->levelInfo[i].forward = SKL_END(list);
@@ -120,7 +111,7 @@ static void insert(SkipList* list, const void* pKey)
 	for(int i = newNode->level; i < list->level; i++){
 		struct SkipListLevel* _fl = markPoints[i].forward->levelInfo + i;
 		if (_fl->forward && _fl->forward != SKL_END(list))
-			_fl->span += 1;
+			_fl->forward->levelInfo[i].span += 1;
 	}
 	if (newNode->level > list->level)
 		list->level = newNode->level;
