@@ -9,7 +9,7 @@
 |线性结构|[SqList](#1)|[SqStack](#2)|[DuCirLinkList](#3)|[DlQueue](#4)|
 |:----|:----|:----|:----|:----|
 |**树结构**|**[ThrtAVLTree](#5)**|**[RBTree](#6)**|**[B-Tree](#7)**|**[B+Tree](#8)**|
-|**其他结构**|**[HashTable](#9)**|
+|**其他结构**|**[HashTable](#9)**|**[SkipList](#10)**|
   
 ## <span id="1">SqList</span>
 ```c
@@ -319,8 +319,60 @@ typedef struct HashTable{
 
 1. 对于一组源数据，散列函数会尽可能使其输出均匀分布，而大多数散列函数的实现都采用了LCG算法，或类似变种
 2. 散列数组的扩容方式大体分为两种：倍数扩充，如MSVC的STL实现和java的HashMap；素数扩充，如SGI-STL3.0和c#的HashTable；在往桶中存放数据的时候，往往需要按照桶的数量再次取模，LCG算法存在周期，而模一个质数能使这个周期达到最大，这也是素数扩充的理论基础；但如果散列函数已经足够随机，模的数是否为质数影响已然不大
-3. 冲突处理，总体分为开放地址法和链地址法；MSVC中实现unordered_map便采用了开放地址法，这种方法可以极大的提高cpu cache命中率，就算在冲突的情况下也能快速得到数据，但如果冲突过多，存取效率会不如链地址法；jdk1.8的HashMap采用了链地址法，在冲突时会自动转化为链表，在链表元素数目达到8且不执行扩容机制时自动转化为红黑树，红黑树元素数目降为6，在resize或remove满足相应条件时再次转化为链表，中间有一个7的缓冲防止频繁转换
+3. 冲突处理，总体分为开放地址法和链地址法；MSVC中实现unordered_map便采用了开放地址法，这种方法可以极大的提高cpu cache命中率，就算在冲突的情况下也能快速得到数据，但如果冲突过多，存取效率会不如链地址法；jdk1.8的HashMap采用了链地址法，在冲突时会自动转化为链表，在链表元素数目达到8且不执行扩容机制时自动转化为红黑树，红黑树元素数目降为6，在resize或remove满足相应条件时再次退化成链表，中间有一个7的缓冲防止频繁转换
 
-本文HashTable的实现借鉴了以上方法，散列函数用的是MSVC中的_Hash_seq(xstddef:_Hash_seq)，但与其满载扩容不同，这里设定了负载因子为0.75，与java-HashMap一致，散列数组初始长度为16，按照4倍容量扩充，在达到256时按照2倍扩充，类似(xhash:_Check_size)；而冲突处理同样借鉴了java-HashMap，在冲突时转化为链表，元素个数达到6时链表转化为红黑树，但又与之不同，当转化为红黑树时不会再退化成链表，转化为链表时不会再退化成普通的entry；即使通过删除元素使冲突位置不再冲突，这时候也只是多出一次比较，但却可以避免相互转化的风险  
+本文HashTable的实现借鉴了以上方法，散列函数用的是MSVC中的_Hash_seq(xstddef:_Hash_seq)，但与其满载扩容不同，这里设定了负载因子为0.75，与java-HashMap一致，散列数组初始长度为16，按照4倍容量扩充，在达到256时按照2倍扩充，类似(xhash:_Check_size)；而冲突处理同样借鉴了java-HashMap，在冲突时转化为链表，元素个数达到6时链表转化为红黑树，但与之不同，在下一次rehash之前，当桶转化为红黑树时不会再退化成链表，转化为链表时不会再退化成普通的entry；即使通过删除元素使冲突位置不再冲突，这时候也只是多出一次比较，但却可以避免相互转化的风险  
 
 [**参考链接：**]()&nbsp;[LCG算法介绍](https://www.cnblogs.com/vancasola/p/9942583.html)&nbsp;&nbsp;[LCG算法深入理解](https://zhuanlan.zhihu.com/p/36301602)&nbsp;&nbsp;[伪随机数发生器](https://www.zhihu.com/question/35365618/answer/991302922)&nbsp;&nbsp;[哈希函数模质数](https://www.cnblogs.com/cryingrain/p/11144225.html)&nbsp;&nbsp;[lua hash函数](https://blog.codingnow.com/2020/05/lua_hash.html)&nbsp;&nbsp;[HashMap中红黑树退化成链表的条件](https://blog.csdn.net/qq_45369827/article/details/114930945)
+
+## <span id="10">SkipList</span>
+```c
+#define SKIPLIST_MAXLEVEL 32
+#define SKIPLIST_P 0.25f
+
+#define SKL_BEGIN(L) (L)->header->levelInfo[0].forward
+#define SKL_LAST(L) (L)->header->backward
+#define SKL_HEAD(L) (L)->header
+#define SKL_END(L) SKL_HEAD(L)
+
+typedef struct SkipListNode{
+	void* pKey;
+	struct SkipListNode* backward;
+	unsigned short level;
+	struct SkipListLevel{
+		struct SkipListNode* forward;
+		size_t span;
+	}levelInfo[];
+}SkipListNode;
+
+typedef struct SkipList{
+	SkipListNode* header;
+	CmnCompareFunc equalFunc;
+	CmnCompareFunc lessFunc;
+	size_t length;
+	size_t keySize;
+	unsigned short level;
+}SkipList;
+```
+这是基于双向循环链表实现的SkipList-Set，header是跳表的头结点，保存了每层的第一个结点指针，同时作为循环结束的标志；SkipListNode借鉴了Redis中跳表的结点数据结构实现，即增加一个span数据域表示当前结点层跳过了多少个结点，在计算排名相关操作时可以使时间复杂度与键查找保持一致；跳表的层数非均匀分布，遵循以下算法：
+```c
+static inline unsigned char __random_level()
+{
+	unsigned char level = 1;
+	while((1.0f * rand()) / RAND_MAX <= SKIPLIST_P && level < SKIPLIST_MAXLEVEL)
+		level++;
+	return level;
+}
+```
+通过计算可知每个结点平均层数为1/(1-p)，具体证明点击[这里](https://zhuanlan.zhihu.com/p/23370124)；而跳表时间复杂度的计算，实际就是对跳表最长查找路径的计算，因为每层最长查找路径恒为1/p，要使查找路径最长，必然是每一层的查找都走到最后一个结点，而跳表层数为log(1/p, N)，故时间复杂度为(1/p)\*log(1/p, N)，即为log(1/p, N)；这里的p与Redis中的实现保持一致，取值0.25，此时结点平均层数为1.33，时间复杂度为log(4, N)  
+
+跳表与二叉树比较，有如下优点：  
+
+1. 占用空间少，跳表要达到二叉树一样的效率，p的取值必然要小于等于0.5，这时候平均指针数即平均层数必然小于等于2
+2. 效率更加灵活，以p取值0.25为例，log(4, N)的复杂度已经远远优于log(2, N)
+3. 范围查找即为线性查找，清晰方便，而二叉树需要进行较为复杂的中序遍历
+4. 实现简单，调试方便，这来源作者原话(They are simpler to implement, debug, and so forth.)，不过对于实现简单这点我不太苟同，加入了span的跳表实现复杂度与二叉树相差无几了
+
+跳表的缺点也很明显，因为层数随机，当数据量没有达到一个量级的时候，实际的层数分布很有可能与理论分布相差甚远，这时候效率会远远低于二叉树
+
+[**参考链接：**]()&nbsp;[Redis为什么用跳表而不用平衡树](https://zhuanlan.zhihu.com/p/23370124)&nbsp;&nbsp;[漫画：什么是跳表](https://zhuanlan.zhihu.com/p/53975333?ivk_sa=1024320u)&nbsp;&nbsp;[图解：什么是跳表](https://mp.weixin.qq.com/s/gGL4vghqhIy_Gzcfah3FTw)
