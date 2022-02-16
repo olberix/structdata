@@ -89,24 +89,24 @@ int main(int argc, char const *argv[])
 		SkipList().insert(list, &key);
 	}
 
-	for (int i = 0; i <= range / 2; i += 2){
-		key = i;
-		SkipList().erase(list, &key);
-	}
-	for (int i = range - 2; i >= range / 2; i -= 2){
-		key = i;
-		SkipList().erase(list, &key);
-	}
+	// for (int i = 0; i <= range / 2; i += 2){
+	// 	key = i;
+	// 	SkipList().erase(list, &key);
+	// }
+	// for (int i = range - 2; i >= range / 2; i -= 2){
+	// 	key = i;
+	// 	SkipList().erase(list, &key);
+	// }
 
-	puts("=============");
-	SkipList().for_each(list, display, NULL);
-	for (int i = 0; i <= range / 2; i+=2){
-		int idx = rand() % SkipList().length(list);
-		SkipList().erase_loc(list, idx);
-		// SkipList().erase_loc(list, 0);
-		printf("********%d\n", idx);
-		SkipList().for_each(list, display, NULL);
-	}
+	// puts("=============");
+	// SkipList().for_each(list, display, NULL);
+	// for (int i = 0; i <= range / 2; i+=2){
+	// 	int idx = rand() % SkipList().length(list);
+	// 	SkipList().erase_loc(list, idx);
+	// 	// SkipList().erase_loc(list, 0);
+	// 	printf("********%d---%d\n", idx);
+	// 	// SkipList().for_each(list, display, NULL);
+	// }
 
 	puts("=============");
 	for (int i = 0; i < (int)SkipList().length(list); i++){
@@ -125,6 +125,14 @@ int main(int argc, char const *argv[])
 	SkipList().for_each(list, display, NULL);
 	puts("=============");
 	SkipList().r_for_each(list, display, NULL);
+
+	puts("=============");
+	const void* _ret = SkipList().erase_loc(list, 0);
+	int ret = TOCONSTANT(int, _ret);
+	printf("***----%d\n", ret);
+	_ret = SkipList().erase_loc(list, range - 2);
+	ret = TOCONSTANT(int, _ret);
+	printf("***----%d\n", ret);
 
 	SkipList().destroy(&list);
 	return 0;

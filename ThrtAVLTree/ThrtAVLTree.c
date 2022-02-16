@@ -572,10 +572,8 @@ const void* at(AVLTree* tree, const void* pKey)
 {
 	AVLNode* root = tree->root;
 	while(root){
-		if (tree->equalFunc(root->pKey, pKey)){
-			memcpy(tree->tmpRet, root->pValue, tree->valSize);
-			return tree->tmpRet;
-		}
+		if (tree->equalFunc(root->pKey, pKey))
+			return root->pValue;
 		if (tree->lessFunc(root->pKey, pKey))
 			root = L_CHILD(root);
 		else

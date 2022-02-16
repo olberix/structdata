@@ -320,18 +320,14 @@ static const void* at(HashTable* table, const void* pKey)
 		case BUCKETTYPE_NIL:
 			return NULL;
 		case BUCKETTYPE_ORIGIN:{
-			if (table->equalFunc(_bkt.bucket.entry.pKey, pKey)){
-				memcpy(table->tmpRet, _bkt.bucket.entry.pValue, table->valSize);
-				return table->tmpRet;
-			}
+			if (table->equalFunc(_bkt.bucket.entry.pKey, pKey))
+				return _bkt.bucket.entry.pValue;
 			return NULL;
 		}
 		case BUCKETTYPE_LIST:{
 			DULIST_FOREACH(_bkt.bucket.entry_list, HashEntry, {
-				if (table->equalFunc(value.pKey, pKey)){
-					memcpy(table->tmpRet, value.pValue, table->valSize);
-					return table->tmpRet;
-				}
+				if (table->equalFunc(value.pKey, pKey))
+					return value.pValue;
 			});
 			return NULL;
 		}
@@ -340,8 +336,7 @@ static const void* at(HashTable* table, const void* pKey)
 			if (!ret)
 				return NULL;
 			HashEntry entry = TOCONSTANT(HashEntry, ret);
-			memcpy(table->tmpRet, entry.pValue, table->valSize);
-			return table->tmpRet;
+			return entry.pValue;
 		}
 		default:
 			return NULL;

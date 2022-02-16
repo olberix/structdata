@@ -6,6 +6,7 @@ static SkipList* create(size_t keySize, CmnCompareFunc equalFunc, CmnCompareFunc
 	CONDCHECK(equalFunc && lessFunc, STATUS_NULLFUNC, __FILE__, __LINE__);
 	POINTCREATE_INIT(SkipList*, list, SkipList, sizeof(SkipList));
 	POINTCREATE_INIT(EMPTYDEF, list->header, void, sizeof(SkipListNode) + sizeof(struct SkipListLevel) * SKIPLIST_MAXLEVEL);
+	POINTCREATE_INIT(EMPTYDEF, list->tmpRet, void, keySize);
 	SKL_BEGIN(list) = SKL_HEAD(list);
 	SKL_LAST(list) = SKL_END(list);
 	list->keySize = keySize;
@@ -34,6 +35,7 @@ static inline void clear(SkipList* list)
 static inline void destroy(SkipList** sList)
 {
 	clear(*sList);
+	FREE((*sList)->tmpRet);
 	FREE(SKL_HEAD(*sList));
 	FREE(*sList);
 }
@@ -167,10 +169,10 @@ static void erase(SkipList* list, const void* pKey)
 	FREE(node);
 }
 
-static void erase_loc(SkipList* list, size_t loc)
+static const void* erase_loc(SkipList* list, size_t loc)
 {
 	if (loc >= list->length)
-		return;
+		return NULL;
 
 	loc++;
 	SkipListNode* markNodes[SKIPLIST_MAXLEVEL];
@@ -224,8 +226,10 @@ static void erase_loc(SkipList* list, size_t loc)
 	}
 	list->length--;
 
+	memcpy(list->tmpRet, node->pKey, list->keySize);
 	FREE(node->pKey);
 	FREE(node);
+	return list->tmpRet;
 }
 
 static const void* at(SkipList* list, size_t loc)

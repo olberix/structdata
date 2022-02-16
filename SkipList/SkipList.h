@@ -24,6 +24,7 @@ typedef struct SkipList{
 	SkipListNode* header;
 	CmnCompareFunc equalFunc;
 	CmnCompareFunc lessFunc;
+	void* tmpRet;
 	size_t length;
 	size_t keySize;
 	unsigned short level;
@@ -35,7 +36,7 @@ typedef struct SkipListOp{
 	void (*clear)(SkipList*);
 	void (*insert)(SkipList*, const void*);
 	void (*erase)(SkipList*, const void*);
-	void (*erase_loc)(SkipList*, size_t);
+	const void* (*erase_loc)(SkipList*, size_t);
 	const void* (*at)(SkipList*, size_t);
 	long long (*find)(SkipList*, const void*);
 	size_t (*length)(SkipList*);
