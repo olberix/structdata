@@ -177,6 +177,17 @@ static void quick_sort(CmnCompareFunc func, DuCirLink* lhs, DuCirLink* rhs)
 		quick_sort(func, lhs->next, recR);
 }
 
+static void swap(DuCirLinkList* pList, size_t left, size_t right)
+{
+	if (left == right || left >= pList->length || right >= pList->length)
+		return;
+	DuCirLink* lhs = FIND_LOCNODE(pList, left);
+	DuCirLink* rhs = FIND_LOCNODE(pList, right);
+	memcpy(pList->tmpRet, lhs->pElem, pList->e_S);
+	memcpy(lhs->pElem, rhs->pElem, pList->e_S);
+	memcpy(rhs->pElem, pList->tmpRet, pList->e_S);
+}
+
 static void sort(DuCirLinkList* pList, CmnCompareFunc func)
 {
 	if (pList->length <= 1)
@@ -200,6 +211,7 @@ inline const DucListOp* GetDucListOpStruct()
 		.r_for_each = r_for_each,
 		.reverse = reverse,
 		.sort = sort,
+		.swap = swap,
 	};
 	return &OpList;
 }

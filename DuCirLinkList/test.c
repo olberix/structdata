@@ -115,5 +115,11 @@ int main()
 	int d = TOCONSTANT(int, DucList().at(list, 0));
 	printf("%d\n", d);
 
+	DucList().swap(list, 0, 5);
+	DucList().swap(list, 0, 5);
+	DULIST_FOREACH(list, int, {
+		printf("[%lu]\t%d\n", key, value);
+	});
+
 	return 0;
 }

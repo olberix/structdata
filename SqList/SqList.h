@@ -31,6 +31,7 @@ typedef struct SqListOp{
 	void (*reverse)(SqList*);
 	void (*sort)(SqList*, CmnCompareFunc);
 	void (*mem_init)(SqList*);
+	void (*swap)(SqList*, size_t, size_t);
 }SqListOp;
 
 #define SQLIST_FOREACH(pList, type, logic) {\

@@ -56,6 +56,8 @@ int main()
 	});
 	tmp.a = 123456789;
 	SqList().change(list, 0, &tmp);
+	SqList().swap(list, 0, 49);
+	SqList().swap(list, 0, 49);
 	puts("++++++++++++++++++++++++++++++++");
 	SQLIST_FOREACH_REVERSE(list, StA, {
 		printf("[%lu]\t%d\t%lf\n", key, value.a, value.b);

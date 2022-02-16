@@ -34,6 +34,7 @@ typedef struct DucListOp{
 	void (*r_for_each)(DuCirLinkList*, SequenceForEachFunc_Mutable, void*);
 	void (*reverse)(DuCirLinkList*);
 	void (*sort)(DuCirLinkList*, CmnCompareFunc);
+	void (*swap)(DuCirLinkList*, size_t, size_t);
 }DucListOp;
 
 #define DULIST_FOREACH(pList, type, logic) {\

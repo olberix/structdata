@@ -162,6 +162,17 @@ static void QUICK_SORT(SqList* pList, CmnCompareFunc func, size_t left, size_t r
 		QUICK_SORT(pList, func, _ll + 1, right);
 }
 
+static void swap(SqList* pList, size_t left, size_t right)
+{
+	if (left == right || left >= pList->length || right >= pList->length)
+		return;
+	void* lhs = pList->pElems + pList->e_S * left;
+	void* rhs = pList->pElems + pList->e_S * right;
+	memcpy(pList->tmpRet, lhs, pList->e_S);
+	memcpy(lhs, rhs, pList->e_S);
+	memcpy(rhs, pList->tmpRet, pList->e_S);
+}
+
 static inline void sort(SqList* pList, CmnCompareFunc func)
 {
 	if (pList->length <= 1)
@@ -188,6 +199,7 @@ inline const SqListOp* GetSqListOpStruct()
 		.reverse = reverse,
 		.sort = sort,
 		.mem_init = mem_init,
+		.swap = swap,
 	};
 	return &OpList;
 }
