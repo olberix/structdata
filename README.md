@@ -6,8 +6,8 @@
 *	通过void\*实现数据泛型，在创建数据结构的时候会传入键值大小，相关操作函数等
 *	某种数据结构的实现都只包含了一个.h和一个.c文件，.c文件里面的函数实现大部分为静态函数，其中以全大写或"\_\_"开始命名的函数为内部函数，不提供外部使用；在.h文件中提供了一个包含操作接口的结构体，可以通过相关函数获取这个结构体单例进而操作具体的数据结构
   
-|线性结构|[SqList](#1)|[SqStack](#2)|[DuCirLinkList](#3)|[DlQueue](#4)|**[SkipList](#10)**|
-|:----|:----|:----|:----|:----|:----|
+|线性结构|[SqList](#1)|[SqStack](#2)|[DuCirLinkList](#3)|[DlQueue](#4)|**[SkipList](#10)**|**[PriorityQueue](#11)**|
+|:----|:----|:----|:----|:----|:----|:----|
 |**树结构**|**[ThrtAVLTree](#5)**|**[RBTree](#6)**|**[B-Tree](#7)**|**[B+Tree](#8)**|
 |**其他结构**|**[HashTable](#9)**|
   
@@ -375,4 +375,16 @@ unsigned char __random_level()
 
 跳表的缺点也很明显，因为层数的随机性，当数据量没有达到一个量级的时候，实际的层数分布很有可能与理论分布相差甚远，这时候效率会远远低于二叉树
 
-[**参考链接：**]()&nbsp;[Redis为什么用跳表而不用平衡树](https://zhuanlan.zhihu.com/p/23370124)&nbsp;&nbsp;[漫画：什么是跳表](https://zhuanlan.zhihu.com/p/53975333?ivk_sa=1024320u)&nbsp;&nbsp;[图解：什么是跳表](https://mp.weixin.qq.com/s/gGL4vghqhIy_Gzcfah3FTw)
+[**参考链接：**]()&nbsp;[Redis为什么用跳表而不用平衡树](https://zhuanlan.zhihu.com/p/23370124)&nbsp;&nbsp;[漫画：什么是跳表](https://zhuanlan.zhihu.com/p/53975333?ivk_sa=1024320u)&nbsp;&nbsp;[图解：什么是跳表](https://mp.weixin.qq.com/s/gGL4vghqhIy_Gzcfah3FTw)  
+
+## <span id="11">PriorityQueue</span>
+```c
+typedef struct PriorityQueue{
+	SqList* list;
+	CmnCompareFunc topFunc;
+}PriorityQueue;
+```
+
+PriorityQueue是通过二叉堆实现的优先队列，继承了SqList的实现，并在此基础上提供了队列接口；在概念上，二叉堆分为大顶（根）堆和小顶（根）堆，但在实际编程的时候，通常是通过相关比较函数确定堆的上下分布；对二叉堆的结点有两个重要的操作，向下调整（堆化）和向上调整（为啥向上调整就不能叫堆化？），其中向上调整仅需比较自身与父结点，向下调整需比较自身和左右孩子  
+
+[**参考链接：**]()&nbsp;[图解：什么是二叉堆](https://mp.weixin.qq.com/s/wVrklsni7WyuCQkNlbrbUQ)
