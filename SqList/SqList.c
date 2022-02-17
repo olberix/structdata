@@ -168,9 +168,13 @@ static void swap(SqList* pList, size_t left, size_t right)
 		return;
 	void* lhs = pList->pElems + pList->e_S * left;
 	void* rhs = pList->pElems + pList->e_S * right;
-	memcpy(pList->tmpRet, lhs, pList->e_S);
-	memcpy(lhs, rhs, pList->e_S);
-	memcpy(rhs, pList->tmpRet, pList->e_S);
+	for (size_t i = 0; i < pList->e_S; i++){
+		unsigned char* _lhs = lhs + i;
+		unsigned char* _rhs = rhs + i;
+		unsigned char tmp = *_lhs;
+		*_lhs = *_rhs;
+		*_rhs = tmp;
+	}
 }
 
 static inline void sort(SqList* pList, CmnCompareFunc func)

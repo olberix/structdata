@@ -181,11 +181,15 @@ static void swap(DuCirLinkList* pList, size_t left, size_t right)
 {
 	if (left == right || left >= pList->length || right >= pList->length)
 		return;
-	DuCirLink* lhs = FIND_LOCNODE(pList, left);
-	DuCirLink* rhs = FIND_LOCNODE(pList, right);
-	memcpy(pList->tmpRet, lhs->pElem, pList->e_S);
-	memcpy(lhs->pElem, rhs->pElem, pList->e_S);
-	memcpy(rhs->pElem, pList->tmpRet, pList->e_S);
+	DuCirLink* ln = FIND_LOCNODE(pList, left);
+	DuCirLink* rn = FIND_LOCNODE(pList, right);
+	for (size_t i = 0; i < pList->e_S; i++){
+		unsigned char* _lhs = ln->pElem + i;
+		unsigned char* _rhs = rn->pElem + i;
+		unsigned char tmp = *_lhs;
+		*_lhs = *_rhs;
+		*_rhs = tmp;
+	}
 }
 
 static void sort(DuCirLinkList* pList, CmnCompareFunc func)
