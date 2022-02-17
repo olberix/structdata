@@ -6,7 +6,7 @@
 *	通过void\*实现数据泛型，在创建数据结构的时候会传入键值大小，相关操作函数等
 *	某种数据结构的实现都只包含了一个.h和一个.c文件，.c文件里面的函数实现大部分为静态函数，其中以全大写或"\_\_"开始命名的函数为内部函数，不提供外部使用；在.h文件中提供了一个包含操作接口的结构体，可以通过相关函数获取这个结构体单例进而操作具体的数据结构
   
-|线性结构|[SqList](#1)|[SqStack](#2)|[DuCirLinkList](#3)|[DlQueue](#4)|**[SkipList](#10)**|**[PriorityQueue](#11)**|
+|线性结构|[SqList](#1)|[SqStack](#2)|[DuCirLinkList](#3)|[DlQueue](#4)|**[SkipList](#10)**|**[PriorityQueue](#PriorityQueue)**|
 |:----|:----|:----|:----|:----|:----|:----|
 |**树结构**|**[ThrtAVLTree](#5)**|**[RBTree](#6)**|**[B-Tree](#7)**|**[B+Tree](#8)**|
 |**其他结构**|**[HashTable](#9)**|
@@ -377,7 +377,7 @@ unsigned char __random_level()
 
 [**参考链接：**]()&nbsp;[Redis为什么用跳表而不用平衡树](https://zhuanlan.zhihu.com/p/23370124)&nbsp;&nbsp;[漫画：什么是跳表](https://zhuanlan.zhihu.com/p/53975333?ivk_sa=1024320u)&nbsp;&nbsp;[图解：什么是跳表](https://mp.weixin.qq.com/s/gGL4vghqhIy_Gzcfah3FTw)  
 
-## <span id="11">PriorityQueue</span>
+## <span id="PriorityQueue">PriorityQueue</span>
 ```c
 typedef struct PriorityQueue{
 	SqList* list;
