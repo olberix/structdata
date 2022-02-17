@@ -9,7 +9,7 @@ typedef struct PriorityQueue{
 }PriorityQueue;
 
 typedef struct PriorityQueueOp{
-	PriorityQueue* (*create)(size_t, const size_t*);
+	PriorityQueue* (*create)(size_t, CmnCompareFunc);
 	void (*destroy)(PriorityQueue**);
 	void (*clear)(PriorityQueue*);
 	size_t (*length)(PriorityQueue*);

@@ -37,7 +37,7 @@ static inline void __heap_adjust_up(PriorityQueue* queue, size_t basis)
 		size_t parent_i = (basis - 1) / 2;
 		if (!queue->topFunc(SqList().at(queue->list, parent_i), SqList().at(queue->list, basis)))
 			break;
-		SqList().swap(parent_i, basis);
+		SqList().swap(queue->list, parent_i, basis);
 		if (!parent_i)
 			break;
 		basis = parent_i;
@@ -47,13 +47,22 @@ static inline void __heap_adjust_up(PriorityQueue* queue, size_t basis)
 static inline void __heap_adjust_down(PriorityQueue* queue, size_t basis)
 {
 	while(true){
-		size_t parent_i = (basis - 1) / 2;
-		if (!queue->topFunc(SqList().at(queue->list, parent_i), SqList().at(queue->list, basis)))
+		size_t left_i = (basis << 1) + 1;
+		const void* lhs = SqList().at(queue->list, left_i);
+		if (!lhs)
 			break;
-		SqList().swap(parent_i, basis);
-		if (!parent_i)
+		const void* topper = lhs;
+		size_t next = left_i;
+		size_t right_i = (basis << 1) + 2;
+		const void* rhs = SqList().at(queue->list, right_i);
+		if (rhs && queue->topFunc(lhs, rhs)){
+			topper = rhs;
+			next = right_i;
+		}
+		if (!queue->topFunc(SqList().at(queue->list, basis), topper))
 			break;
-		basis = parent_i;
+		SqList().swap(queue->list, basis, next);
+		basis = next;
 	}
 }
 
@@ -65,8 +74,29 @@ static inline void push(PriorityQueue* queue, const void* elem)
 
 static inline void change(PriorityQueue* queue, size_t loc, const void* elem)
 {
-	// SqList().change(queue->list, loc, elem);
-	// __heap_adjust_up(queue, SqList().length(queue->list) - 1);
+	if (loc >= SqList().length(queue->list))
+		return;
+	bool topAdj = queue->topFunc(SqList().at(queue->list, loc), elem);
+	SqList().change(queue->list, loc, elem);
+	if (topAdj)
+		__heap_adjust_up(queue, loc);
+	else
+		__heap_adjust_down(queue, loc);
+}
+
+static inline const void* erase(PriorityQueue* queue, size_t loc)
+{
+	if (loc >= SqList().length(queue->list))
+		return NULL;
+	SqList().swap(queue->list, loc, SqList().length(queue->list) - 1);
+	const void* ret = SqList().erase(queue->list, SqList().length(queue->list) - 1);
+	__heap_adjust_down(queue, loc);
+	return ret;
+}
+
+static inline const void* pop(PriorityQueue* queue)
+{
+	return erase(queue, 0);
 }
 
 static inline const void* get_top(PriorityQueue* queue)
@@ -77,7 +107,7 @@ static inline const void* get_top(PriorityQueue* queue)
 static inline void for_each(PriorityQueue* queue, SequenceForEachFunc_Const func, void* args)
 {
 	size_t length = SqList().length(queue->list);
-	if (length == 0)
+	if (!length)
 		return;
 	SqList* list = queue->list;
 	size_t e_S = list->e_S;
@@ -96,7 +126,7 @@ inline const PriorityQueueOp* GetPriorityQueueOpStruct()
 		.push = push,
 		.change = change,
 		.erase = erase,
-		.top = top,
+		.pop = pop,
 		.get_top = get_top,
 		.for_each = for_each,
 	};
