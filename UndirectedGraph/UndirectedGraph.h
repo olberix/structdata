@@ -2,8 +2,8 @@
 #define _UNDIRECTED_GRAPH__
 #include "../common/common.h"
 
-#define UG_MAX_VERTEX_NUM 10
-#define UG_GEN_EDGE_RATE 5000
+#define UG_MAX_VERTEX_NUM 15
+#define UG_GEN_EDGE_RATE 6000
 #define UG_MAX_WEIGHT 100
 
 typedef struct UGEdgeNode{
@@ -20,9 +20,20 @@ typedef struct UGVertexNode{
 }UGVertexNode;
 
 typedef struct UGraph{
-	UGVertexNode adjmulist[MAX_VERTEX_NUM];
+	UGVertexNode adjmulist[UG_MAX_VERTEX_NUM];
 	int vexNum;
 	int edgeNum;
 }UGraph;
 
+typedef struct UGraphOp{
+	UGraph* (*create)();
+	void (*destroy)(UGraph**);
+	void (*showGraph)(UGraph*);
+	void (*DFSTraverse)(UGraph*);
+	void (*DFSTraverse_stack)(UGraph*);
+	void (*BFSTraverse)(UGraph*);
+}UGraphOp;
+
+extern const UGraphOp* GetUGraphOpStruct();
+#define UGraph() (*(GetUGraphOpStruct()))
 #endif
