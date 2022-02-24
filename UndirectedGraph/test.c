@@ -2,6 +2,7 @@
 
 int main(int argc, char const *argv[])
 {
+	srand(121);
 	UGraph* ug = UGraph().create();
 
 	puts("+++++++++++++++++++++++++");
@@ -12,6 +13,13 @@ int main(int argc, char const *argv[])
 
 	puts("+++++++++++++++++++++++++");
 	UGraph().DFSTraverse_stack(ug);
+
+	puts("+++++++++++++++++++++++++");
+	UGraph().BFSTraverse(ug);
+
+	UGraph().addEdge(ug, 0, 1, 55);
+	puts("+++++++++++++++++++++++++");
+	UGraph().showGraph(ug);
 
 	UGraph().destroy(&ug);
 	return 0;

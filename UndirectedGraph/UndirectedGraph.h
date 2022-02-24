@@ -3,7 +3,7 @@
 #include "../common/common.h"
 
 #define UG_MAX_VERTEX_NUM 15
-#define UG_GEN_EDGE_RATE 6000
+#define UG_GEN_EDGE_RATE 3500
 #define UG_MAX_WEIGHT 100
 
 typedef struct UGEdgeNode{
@@ -32,6 +32,8 @@ typedef struct UGraphOp{
 	void (*DFSTraverse)(UGraph*);
 	void (*DFSTraverse_stack)(UGraph*);
 	void (*BFSTraverse)(UGraph*);
+	void (*addEdge)(UGraph*, int, int, int);
+	void (*deleteEdge)(UGraph*, int, int);
 }UGraphOp;
 
 extern const UGraphOp* GetUGraphOpStruct();

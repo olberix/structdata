@@ -106,6 +106,7 @@ static void showGraph(UGraph* graph)
 		return;
 	}
 	printf("edge:%d\n", graph->edgeNum);
+	int count = 0;
 	SkipList* skl = SkipList().create(sizeof(UGEdgeNode*), default_equal_func_uint64, default_less_func_uint64);
 	DlQueue* queue = DlQueue().create(sizeof(UGEdgeNode*));
 	for (int i = 0; i < graph->vexNum; i++){
@@ -120,92 +121,239 @@ static void showGraph(UGraph* graph)
 				printf("[v%d v%d %d]\t", edge->ivex, edge->jvex, edge->weight);
 				DlQueue().push(queue, &(edge->ilink));
 				DlQueue().push(queue, &(edge->jlink));
+				count++;
 			}
 		}
 	}
 	puts("");
+	printf("total edge output:%d\n", count);
 	SkipList().destroy(&skl);
 	DlQueue().destroy(&queue);
 }
 
-static void __DFSTraverse(UGraph* graph, UGEdgeNode* edge, bool visited[])
+static void __DFSTraverse(UGraph* graph, int i, UGEdgeNode* edge, SkipList* skl, bool visited[], int* count)
 {
-	if (!edge)
+	if (!visited[i]){
+		visited[i] = true;
+		(*count)++;
+		printf("v%d:%d ", i, graph->adjmulist[i].data);
+	}
+	if (!edge){
+		if (graph->adjmulist[i].firstEdge)
+			__DFSTraverse(graph, i, graph->adjmulist[i].firstEdge, skl, visited, count);
 		return;
-	if (!visited[edge->ivex]){
-		visited[edge->ivex] = true;
-		printf("v%d:%d ", edge->ivex, graph->adjmulist[edge->ivex].data);
 	}
-	__DFSTraverse(graph, edge->ilink, visited);
-	if (!visited[edge->jvex]){
-		visited[edge->jvex] = true;
-		printf("v%d:%d ", edge->jvex, graph->adjmulist[edge->jvex].data);
+	if (SkipList().find(skl, &edge) != -1)
+		return;
+	SkipList().insert(skl, &edge);
+	if (edge->ivex == i){
+		__DFSTraverse(graph, edge->jvex, edge->jlink, skl, visited, count);
+		__DFSTraverse(graph, edge->ivex, edge->ilink, skl, visited, count);
 	}
-	__DFSTraverse(graph, edge->jlink, visited);
+	else{
+		__DFSTraverse(graph, edge->ivex, edge->ilink, skl, visited, count);
+		__DFSTraverse(graph, edge->jvex, edge->jlink, skl, visited, count);
+	}
 }
 
 //类似树的前中后序遍历，对顶点不同的访问次序会导致最终的顶点序列不同
-//可以发现，对于邻接多重表实现无向图，因为边的交叉指向，使用DFS/BFS对顶点进行遍历时会对同一条边进行多次重复遍历
-//在这方面效率不如邻接表的实现，不过可以在一次递归内连续访问两个顶点，然后
+//可以发现，对于邻接多重表实现无向图，可以使用DFS/BFS分别对边或者顶点进行遍历
+//上面destroy和showGraph是对边的DFS/BFS遍历，下面是对顶点的的DFS/BFS遍历，对边和顶点的遍历可以产生不同的顶点序列
 static void DFSTraverse(UGraph* graph)
 {
 	if (!graph->vexNum)
 		return;
 	bool visited[UG_MAX_VERTEX_NUM];
 	memset(visited, 0, sizeof(visited));
-	for (int i = 0; i < graph->vexNum; i++){
-		if (!visited[i]){
-			visited[i] = true;
-			printf("v%d:%d ", i, graph->adjmulist[i].data);
-		}
-		__DFSTraverse(graph, graph->adjmulist[i].firstEdge, visited);
-	}
-	puts("");
+	SkipList* skl = SkipList().create(sizeof(UGEdgeNode*), default_equal_func_uint64, default_less_func_uint64);
+	int count = 0;
+	for (int i = 0; i < graph->vexNum; i++)
+		__DFSTraverse(graph, i, graph->adjmulist[i].firstEdge, skl, visited, &count);
+	printf("\nDFS_recur total vertex output:%d\n", count);
+	SkipList().destroy(&skl);
 }
 
-//访问次序与递归实现保持一致，因为访问
+//访问次序与递归实现保持一致
+//邻接多重表DFS的栈实现让人头痛
 static void DFSTraverse_stack(UGraph* graph)
 {
 	if (!graph->vexNum)
 		return;
+
 	bool visited[UG_MAX_VERTEX_NUM];
 	memset(visited, 0, sizeof(visited));
-	SqStack* stack = SqStack().create(sizeof(UGEdgeNode*), NULL);
+	SqStack* stack_edge = SqStack().create(sizeof(UGEdgeNode*), NULL);
+	SqStack* stack_vex = SqStack().create(sizeof(int), NULL);
+	SkipList* skl = SkipList().create(sizeof(UGEdgeNode*), default_equal_func_uint64, default_less_func_uint64);
+
+	int count = 0;
 	for (int i = 0; i < graph->vexNum; i++){
-		if (!visited[i]){
-			visited[i] = true;
-			printf("v%d:%d ", i, graph->adjmulist[i].data);
-		}
 		UGEdgeNode* edge = graph->adjmulist[i].firstEdge;
-		while (edge || !SqStack().empty(stack)){
-			if (edge){
-				if (!visited[edge->ivex]){
-					visited[edge->ivex] = true;
-					printf("v%d:%d ", edge->ivex, graph->adjmulist[edge->ivex].data);
-				}
-				SqStack().push(stack, &edge);
-				edge = edge->ilink;
-			}
-			else{
-				edge = TOCONSTANT(UGEdgeNode*, SqStack().pop(stack));
-				if (!visited[edge->jvex]){
-					visited[edge->jvex] = true;
-					printf("v%d:%d ", edge->jvex, graph->adjmulist[edge->jvex].data);
-				}
-				edge = edge->jlink;
+		int curVex = i;
+
+		while (true){
+			if (!visited[curVex]){
+				visited[curVex] = true;
+				printf("v%d:%d ", curVex, graph->adjmulist[curVex].data);
+				count++;
 			}
 
+			if (!edge && graph->adjmulist[curVex].firstEdge){
+				edge = graph->adjmulist[curVex].firstEdge;
+			}
+			else if (!edge || (edge && SkipList().find(skl, &edge) != -1)){
+				if (SqStack().empty(stack_edge))
+					break;
+				edge = TOCONSTANT(UGEdgeNode*, SqStack().pop(stack_edge));
+				if (TOCONSTANT(int, SqStack().pop(stack_vex)) == edge->ivex){
+					curVex = edge->jvex;
+					edge = edge->jlink;
+				}
+				else{
+					curVex = edge->ivex;
+					edge = edge->ilink;
+				}
+			}
+			else if (edge){
+				SkipList().insert(skl, &edge);
+				SqStack().push(stack_edge, &edge);
+				if (edge->ivex == curVex){
+					curVex = edge->jvex;
+					SqStack().push(stack_vex, &curVex);
+					edge = edge->jlink;
+				}
+				else{
+					curVex = edge->ivex;
+					SqStack().push(stack_vex, &curVex);
+					edge = edge->ilink;
+				}
+			}
+			if (!edge && SqStack().empty(stack_edge))
+				break;
 		}
 	}
-	puts("");
-	SqStack().destroy(&stack);
+	printf("\nDFS_statck total vertex output:%d\n", count);
+	SqStack().destroy(&stack_edge);
+	SqStack().destroy(&stack_vex);
+	SkipList().destroy(&skl);
 }
 
 static void BFSTraverse(UGraph* graph)
 {
 	if (!graph->vexNum)
 		return;
+	bool visited[UG_MAX_VERTEX_NUM];
+	memset(visited, 0, sizeof(visited));
+	DlQueue* queue = DlQueue().create(sizeof(int));
+	int count = 0;
+	for (int i = 0; i < graph->vexNum; i++){
+		if (!visited[i]){
+			DlQueue().push(queue, &i);
+			while(!DlQueue().empty(queue)){
+				int curVex = TOCONSTANT(int, DlQueue().pop(queue));
+				if (!visited[curVex]){
+					visited[curVex] = true;
+					printf("v%d:%d ", curVex, graph->adjmulist[curVex].data);
+					count++;
+				}
+				UGEdgeNode* edge = graph->adjmulist[curVex].firstEdge;
+				while(edge){
+					if (edge->ivex == curVex){
+						if (!visited[edge->jvex])
+							DlQueue().push(queue, &(edge->jvex));
+						edge = edge->ilink;
+					}
+					else{
+						if (!visited[edge->ivex])
+							DlQueue().push(queue, &(edge->ivex));
+						edge = edge->jlink;
+					}
+				}
+			}
+		}
+	}
+	printf("\nBFS total vertex output:%d\n", count);
+	DlQueue().destroy(&queue);
+}
 
+static void addEdge(UGraph* graph, int vex_1, int vex_2, int weight)
+{
+	if (vex_1 >= graph->vexNum || vex_2 >= graph->vexNum || vex_1 == vex_2)
+		return;
+	UGEdgeNode* edge = graph->adjmulist[vex_1].firstEdge;
+	while(edge){//判断重复边
+		if (edge->ivex == vex_1){
+			if (edge->jvex == vex_2)
+				return;
+			if (!edge->ilink)
+				break;
+			edge = edge->ilink;
+		}
+		else{
+			if (edge->ivex == vex_2)
+				return;
+			if (!edge->jlink)
+				break;
+			edge = edge->jlink;
+		}
+	}
+
+	POINTCREATE_INIT(UGEdgeNode*, enode, UGEdgeNode, sizeof(UGEdgeNode));
+	enode->ivex = vex_1;
+	enode->jvex = vex_2;
+	if (edge){
+		if (edge->ivex == vex_1)
+			edge->ilink = enode;
+		else
+			edge->jlink = enode;
+	}
+	else
+		graph->adjmulist[vex_1].firstEdge = enode;
+
+	edge = graph->adjmulist[vex_2].firstEdge;
+	while(edge){
+		if (edge->ivex == vex_2){
+			if (!edge->ilink)
+				break;
+			edge = edge->ilink;
+		}
+		else{
+			if (!edge->jlink)
+				break;
+			edge = edge->jlink;
+		}
+	}
+	if (edge){
+		if (edge->ivex == vex_2)
+			edge->ilink = enode;
+		else
+			edge->jlink = enode;
+	}
+	else
+		graph->adjmulist[vex_2].firstEdge = enode;
+}
+
+static void deleteEdge(UGraph* graph, int vex_1, int vex_2)
+{
+	// if (vex_1 >= graph->vexNum || vex_2 >= graph->vexNum || vex_1 == vex_2)
+	// 	return;
+	// UGEdgeNode* edge = graph->adjmulist[vex_1].firstEdge;
+	// while(edge){
+	// 	if (edge->ivex == vex_1){
+	// 		if (edge->jvex == vex_2)
+	// 			return;
+	// 		if (!edge->ilink)
+	// 			break;
+	// 		edge = edge->ilink;
+	// 	}
+	// 	else{
+	// 		if (edge->ivex == vex_2)
+	// 			return;
+	// 		if (!edge->jlink)
+	// 			break;
+	// 		edge = edge->jlink;
+	// 	}
+	// }
 }
 
 inline const UGraphOp* GetUGraphOpStruct()
@@ -217,6 +365,8 @@ inline const UGraphOp* GetUGraphOpStruct()
 		.DFSTraverse = DFSTraverse,
 		.DFSTraverse_stack = DFSTraverse_stack,
 		.BFSTraverse = BFSTraverse,
+		.addEdge = addEdge,
+		.deleteEdge = deleteEdge,
 	};
 	return &OpList;
 }
