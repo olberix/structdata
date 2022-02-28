@@ -276,6 +276,18 @@ static void BFSTraverse(UGraph* graph)
 	DlQueue().destroy(&queue);
 }
 
+static inline void __set_connection(UGraph* graph, UGEdgeNode* priorEdge, UGEdgeNode* addEdge, int vex)
+{
+	if (priorEdge){
+		if (priorEdge->ivex == vex)
+			priorEdge->ilink = addEdge;
+		else
+			priorEdge->jlink = addEdge;
+	}
+	else
+		graph->adjmulist[vex].firstEdge = addEdge;
+}
+
 static void addEdge(UGraph* graph, int vex_1, int vex_2, int weight)
 {
 	if (vex_1 >= graph->vexNum || vex_2 >= graph->vexNum || vex_1 == vex_2)
@@ -302,14 +314,7 @@ static void addEdge(UGraph* graph, int vex_1, int vex_2, int weight)
 	enode->ivex = vex_1;
 	enode->jvex = vex_2;
 	enode->weight = weight;
-	if (edge){
-		if (edge->ivex == vex_1)
-			edge->ilink = enode;
-		else
-			edge->jlink = enode;
-	}
-	else
-		graph->adjmulist[vex_1].firstEdge = enode;
+	__set_connection(graph, edge, enode, vex_1);
 
 	edge = graph->adjmulist[vex_2].firstEdge;
 	while(edge){
@@ -324,14 +329,7 @@ static void addEdge(UGraph* graph, int vex_1, int vex_2, int weight)
 			edge = edge->jlink;
 		}
 	}
-	if (edge){
-		if (edge->ivex == vex_2)
-			edge->ilink = enode;
-		else
-			edge->jlink = enode;
-	}
-	else
-		graph->adjmulist[vex_2].firstEdge = enode;
+	__set_connection(graph, edge, enode, vex_2);
 
 	graph->edgeNum++;
 }
