@@ -301,6 +301,7 @@ static void addEdge(UGraph* graph, int vex_1, int vex_2, int weight)
 	POINTCREATE_INIT(UGEdgeNode*, enode, UGEdgeNode, sizeof(UGEdgeNode));
 	enode->ivex = vex_1;
 	enode->jvex = vex_2;
+	enode->weight = weight;
 	if (edge){
 		if (edge->ivex == vex_1)
 			edge->ilink = enode;
@@ -331,29 +332,73 @@ static void addEdge(UGraph* graph, int vex_1, int vex_2, int weight)
 	}
 	else
 		graph->adjmulist[vex_2].firstEdge = enode;
+
+	graph->edgeNum++;
+}
+
+static inline void __reset_connection(UGraph* graph, UGEdgeNode* priorEdge, UGEdgeNode* delEdge, int vex)
+{
+	if (priorEdge){
+		if (priorEdge->ivex == vex){
+			if (delEdge->ivex == vex)
+				priorEdge->ilink = delEdge->ilink;
+			else
+				priorEdge->ilink = delEdge->jlink;
+		}
+		else{
+			if (delEdge->ivex == vex)
+				priorEdge->jlink = delEdge->ilink;
+			else
+				priorEdge->jlink = delEdge->jlink;
+		}
+	}
+	else{
+		if (delEdge->ivex == vex)
+			graph->adjmulist[vex].firstEdge = delEdge->ilink;
+		else
+			graph->adjmulist[vex].firstEdge = delEdge->jlink;
+	}
 }
 
 static void deleteEdge(UGraph* graph, int vex_1, int vex_2)
 {
-	// if (vex_1 >= graph->vexNum || vex_2 >= graph->vexNum || vex_1 == vex_2)
-	// 	return;
-	// UGEdgeNode* edge = graph->adjmulist[vex_1].firstEdge;
-	// while(edge){
-	// 	if (edge->ivex == vex_1){
-	// 		if (edge->jvex == vex_2)
-	// 			return;
-	// 		if (!edge->ilink)
-	// 			break;
-	// 		edge = edge->ilink;
-	// 	}
-	// 	else{
-	// 		if (edge->ivex == vex_2)
-	// 			return;
-	// 		if (!edge->jlink)
-	// 			break;
-	// 		edge = edge->jlink;
-	// 	}
-	// }
+	if (vex_1 >= graph->vexNum || vex_2 >= graph->vexNum || vex_1 == vex_2)
+		return;
+	UGEdgeNode* priorEdge_1 = NULL;
+	UGEdgeNode* edge = graph->adjmulist[vex_1].firstEdge;
+	while(edge){
+		if (edge->ivex == vex_1){
+			if (edge->jvex == vex_2)
+				break;
+			priorEdge_1 = edge;
+			edge = edge->ilink;
+		}
+		else{
+			if (edge->ivex == vex_2)
+				break;
+			priorEdge_1 = edge;
+			edge = edge->jlink;
+		}
+	}
+	if (!edge)
+		return;
+	__reset_connection(graph, priorEdge_1, edge, vex_1);
+	
+	UGEdgeNode* priorEdge_2 = NULL;
+	UGEdgeNode* tmpEdge = graph->adjmulist[vex_2].firstEdge;
+	while(tmpEdge){
+		if (tmpEdge == edge)
+			break;
+		priorEdge_2 = tmpEdge;
+		if (tmpEdge->ivex == vex_2)
+			tmpEdge = tmpEdge->ilink;
+		else
+			tmpEdge = tmpEdge->jlink;
+	}
+	__reset_connection(graph, priorEdge_2, edge, vex_2);
+
+	FREE(edge);
+	graph->edgeNum--;
 }
 
 inline const UGraphOp* GetUGraphOpStruct()
