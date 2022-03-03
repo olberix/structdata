@@ -174,7 +174,7 @@ static void DFSTraverse(UGraph* graph)
 }
 
 //访问次序与递归实现保持一致
-//邻接多重表DFS的栈实现让人头痛
+//邻接多重表DFS的栈实现让人头痛,要分清对边和顶点的遍历
 static void DFSTraverse_stack(UGraph* graph)
 {
 	if (!graph->vexNum)
@@ -399,6 +399,55 @@ static void deleteEdge(UGraph* graph, int vex_1, int vex_2)
 	graph->edgeNum--;
 }
 
+static int UNION_ROOT(int union_set[], int vex)
+{
+	return vex == union_set[vex] ? vex : (union_set[vex] = UNION_ROOT(union_set, union_set[vex]));
+}
+
+//判断无向图的连通性方法DFS BFS union-find warshell(比较适合邻接矩阵实现)
+//这里采用union-find方式,对于邻接多重表实现的无向图来说,这里事实上也对边进行了DFS或BFS遍历
+static void isConnected(UGraph* graph)
+{
+	if (!graph->vexNum){
+		puts("empty graph.");
+		return;
+	}
+	int union_set[UG_MAX_VERTEX_NUM];
+	for (int i = 0; i < UG_MAX_VERTEX_NUM; i++)
+		union_set[i] = i;
+	SkipList* skl = SkipList().create(sizeof(UGEdgeNode*), default_equal_func_uint64, default_less_func_uint64);
+	DlQueue* queue = DlQueue().create(sizeof(UGEdgeNode*));
+	for (int i = 0; i < graph->vexNum; i++){
+		UGEdgeNode* firstEdge = graph->adjmulist[i].firstEdge;
+		if (firstEdge){
+			DlQueue().push(queue, &firstEdge);
+			while(!DlQueue().empty(queue)){
+				UGEdgeNode* edge = TOCONSTANT(UGEdgeNode*, DlQueue().pop(queue));
+				if (!edge || SkipList().find(skl, &edge) != -1)
+					continue;
+				SkipList().insert(skl, &edge);
+				union_set[UNION_ROOT(union_set, edge->ivex)] = union_set[UNION_ROOT(union_set, edge->jvex)];
+				DlQueue().push(queue, &(edge->ilink));
+				DlQueue().push(queue, &(edge->jlink));
+			}
+		}
+	}
+	//这里可以输出所有连通分量,懒得折腾了
+	int rootVex = UNION_ROOT(union_set, 0);
+	for (int i = 1; i < UG_MAX_VERTEX_NUM; i++){
+		if (UNION_ROOT(union_set, i) != rootVex){
+			puts("this graph is not connected.");
+			return;
+		}
+	}
+	puts("this graph is connected.");
+}
+
+static bool hasCycle(UGraph* graph)
+{
+
+}
+
 inline const UGraphOp* GetUGraphOpStruct()
 {
 	static const UGraphOp OpList = {
@@ -410,6 +459,8 @@ inline const UGraphOp* GetUGraphOpStruct()
 		.BFSTraverse = BFSTraverse,
 		.addEdge = addEdge,
 		.deleteEdge = deleteEdge,
+		.isConnected = isConnected,
+		.hasCycle = hasCycle,
 	};
 	return &OpList;
 }

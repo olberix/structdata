@@ -34,6 +34,8 @@ typedef struct UGraphOp{
 	void (*BFSTraverse)(UGraph*);
 	void (*addEdge)(UGraph*, int, int, int);
 	void (*deleteEdge)(UGraph*, int, int);
+	void (*isConnected)(UGraph*);
+	bool (*hasCycle)(UGraph*);
 }UGraphOp;
 
 extern const UGraphOp* GetUGraphOpStruct();

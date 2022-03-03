@@ -39,12 +39,21 @@ int main(int argc, char const *argv[])
 	UGraph().deleteEdge(ug, 6, 14);
 	UGraph().deleteEdge(ug, 0, 5);
 
-	UGraph().addEdge(ug, 2, 6, 55);
-	UGraph().addEdge(ug, 6, 5, 55);
-	UGraph().addEdge(ug, 6, 10, 55);
-	UGraph().addEdge(ug, 2, 7, 55);
+	UGraph().addEdge(ug, 0, 1, 55);
+	UGraph().addEdge(ug, 1, 2, 55);
+	UGraph().addEdge(ug, 2, 3, 55);
+	UGraph().addEdge(ug, 3, 4, 55);
+	UGraph().addEdge(ug, 4, 5, 55);
+	UGraph().addEdge(ug, 5, 6, 55);
+	UGraph().addEdge(ug, 6, 7, 55);
 	UGraph().addEdge(ug, 7, 8, 55);
-
+	UGraph().addEdge(ug, 8, 9, 55);
+	UGraph().addEdge(ug, 9, 10, 55);
+	UGraph().addEdge(ug, 10, 11, 55);
+	UGraph().addEdge(ug, 11, 12, 55);
+	UGraph().addEdge(ug, 12, 13, 55);
+	// UGraph().addEdge(ug, 13, 14, 55);
+	// UGraph().addEdge(ug, 14, 0, 55);
 
 	puts("+++++++++++++++++++++++++");
 	UGraph().showGraph(ug);
@@ -56,6 +65,9 @@ int main(int argc, char const *argv[])
 
 	puts("+++++++++++++++++++++++++");
 	UGraph().BFSTraverse(ug);
+
+	puts("+++++++++++++++++++++++++");
+	UGraph().isConnected(ug);
 
 	UGraph().destroy(&ug);
 	return 0;
