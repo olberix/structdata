@@ -404,14 +404,17 @@ static int UNION_ROOT(int union_set[], int vex)
 	return vex == union_set[vex] ? vex : (union_set[vex] = UNION_ROOT(union_set, union_set[vex]));
 }
 
+static void UNION_MERGE(int union_set[], int vex_1, int vex_2)
+{
+	union_set[UNION_ROOT(union_set, vex_1)] = union_set[UNION_ROOT(union_set, vex_2)];
+}
+
 //判断无向图的连通性方法DFS BFS union-find warshell(比较适合邻接矩阵实现)
 //这里采用union-find方式,对于邻接多重表实现的无向图来说,这里事实上也对边进行了DFS或BFS遍历
-static void isConnected(UGraph* graph)
+static bool isConnected(UGraph* graph)
 {
-	if (!graph->vexNum){
-		puts("empty graph.");
-		return;
-	}
+	if (!graph->vexNum)
+		return false;
 	int union_set[UG_MAX_VERTEX_NUM];
 	for (int i = 0; i < UG_MAX_VERTEX_NUM; i++)
 		union_set[i] = i;
@@ -426,7 +429,7 @@ static void isConnected(UGraph* graph)
 				if (!edge || SkipList().find(skl, &edge) != -1)
 					continue;
 				SkipList().insert(skl, &edge);
-				union_set[UNION_ROOT(union_set, edge->ivex)] = union_set[UNION_ROOT(union_set, edge->jvex)];
+				UNION_MERGE(union_set, edge->ivex, edge->jvex);
 				DlQueue().push(queue, &(edge->ilink));
 				DlQueue().push(queue, &(edge->jlink));
 			}
@@ -434,13 +437,16 @@ static void isConnected(UGraph* graph)
 	}
 	//其实这里可以输出所有连通分量,懒得折腾了
 	int rootVex = UNION_ROOT(union_set, 0);
+	bool ret = true;
 	for (int i = 1; i < UG_MAX_VERTEX_NUM; i++){
 		if (UNION_ROOT(union_set, i) != rootVex){
-			puts("this graph is not connected.");
-			return;
+			ret = false;
+			break;
 		}
 	}
-	puts("this graph is connected.");
+	SkipList().destroy(&skl);
+	DlQueue().destroy(&queue);
+	return ret;
 }
 
 static inline int* __get_degree(UGraph* graph)
@@ -465,12 +471,10 @@ static inline int* __get_degree(UGraph* graph)
 //1.DFS(对边进行DFS遍历,遇到已经访问过的边必然有环)
 //2.拓扑排序思想
 //3.并查集,在这里并查集的本质是基于DFS的实现,遍历边是查看两个顶点父结点是否相同,本质就是对边进行DFS访问时是否遇到访问过的边
-static void hasCycle(UGraph* graph)
+static bool hasCycle(UGraph* graph)
 {
-	if (graph->edgeNum >= graph->vexNum){
-		puts("this is graph is cycled.");
-		return;
-	}
+	if (graph->edgeNum >= graph->vexNum)
+		return true;
 	int* degree = __get_degree(graph);
 	for (int i = 0; i < UG_MAX_VERTEX_NUM; i++){
 		if (degree[i] == 1){
@@ -490,12 +494,10 @@ static void hasCycle(UGraph* graph)
 		}
 	}
 	for (int i = 0; i < UG_MAX_VERTEX_NUM; i++)
-		if (degree[i] > 0){
-			puts("this is graph is cycled.");
-			return;
-		}
+		if (degree[i] > 0)
+			return true;
 
-	puts("this is graph is not cycled.");
+	return false;
 }
 
 static void showDegree(UGraph* graph)
@@ -503,6 +505,54 @@ static void showDegree(UGraph* graph)
 	int* degree = __get_degree(graph);
 	for (int i = 0; i < UG_MAX_VERTEX_NUM; i++)
 		printf("TD(v%d):%d ", i, degree[i]);
+	puts("");
+}
+
+static inline bool __skl_edge_equal_func(const void* lhs, const void* rhs)
+{
+	return lhs == rhs;
+}
+
+static inline bool __skl_edge_less_func(const void* lhs, const void* rhs)
+{
+	return ((UGEdgeNode*)rhs)->weight < ((UGEdgeNode*)lhs)->weight;
+}
+
+//并查集,跳表,优先队列不判重
+static void showMiniSpanTree_Kruskal(UGraph* graph)
+{
+	if (!isConnected(graph)){
+		puts("no minispantree in unconnected graph.");
+		return;
+	}
+	SkipList* skl = SkipList().create(sizeof(UGEdgeNode*), __skl_edge_equal_func, __skl_edge_less_func);
+	for (int i = 0; i < graph->vexNum; i++){
+		UGEdgeNode* edge = graph->adjmulist[i].firstEdge;
+		while(edge){
+			SkipList().insert(skl, &edge);
+			if (edge->ivex == i)
+				edge = edge->ilink;
+			else
+				edge = edge->jlink;
+		}
+	}
+	int union_set[UG_MAX_VERTEX_NUM];
+	for (int i = 0; i < UG_MAX_VERTEX_NUM; i++)
+		union_set[i] = i;
+	UGEdgeNode* edge_set[UG_MAX_VERTEX_NUM];
+	int edge_idx = 0;
+	while (edge_idx < UG_MAX_VERTEX_NUM - 1){
+		UGEdgeNode* edge = TOCONSTANT(UGEdgeNode*, SkipList().erase_loc(skl, 0));
+		if (UNION_ROOT(union_set, edge->ivex) == UNION_ROOT(union_set, edge->jvex))
+			continue;
+		edge_set[edge_idx] = edge;
+		edge_idx++;
+		UNION_MERGE(union_set, edge->ivex, edge->jvex);
+	}
+	puts("minispantree:");
+	for (int i = 0; i < UG_MAX_VERTEX_NUM - 1; i++){
+		printf("[v%d v%d %d]\t", edge_set[i]->ivex, edge_set[i]->jvex, edge_set[i]->weight);
+	}
 	puts("");
 }
 
@@ -520,6 +570,7 @@ inline const UGraphOp* GetUGraphOpStruct()
 		.isConnected = isConnected,
 		.hasCycle = hasCycle,
 		.showDegree = showDegree,
+		.showMiniSpanTree_Kruskal = showMiniSpanTree_Kruskal,
 	};
 	return &OpList;
 }

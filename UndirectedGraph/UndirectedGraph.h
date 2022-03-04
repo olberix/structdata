@@ -34,9 +34,10 @@ typedef struct UGraphOp{
 	void (*BFSTraverse)(UGraph*);
 	void (*addEdge)(UGraph*, int, int, int);
 	void (*deleteEdge)(UGraph*, int, int);
-	void (*isConnected)(UGraph*);
-	void (*hasCycle)(UGraph*);
+	bool (*isConnected)(UGraph*);
+	bool (*hasCycle)(UGraph*);
 	void (*showDegree)(UGraph*);
+	void (*showMiniSpanTree_Kruskal)(UGraph*);
 }UGraphOp;
 
 extern const UGraphOp* GetUGraphOpStruct();
