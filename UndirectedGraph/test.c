@@ -52,8 +52,8 @@ int main(int argc, char const *argv[])
 	UGraph().addEdge(ug, 10, 11, 55);
 	UGraph().addEdge(ug, 11, 12, 55);
 	UGraph().addEdge(ug, 12, 13, 55);
-	// UGraph().addEdge(ug, 13, 14, 55);
-	// UGraph().addEdge(ug, 14, 0, 55);
+	UGraph().addEdge(ug, 13, 14, 55);
+	UGraph().addEdge(ug, 14, 0, 55);
 
 	puts("+++++++++++++++++++++++++");
 	UGraph().showGraph(ug);
@@ -68,6 +68,12 @@ int main(int argc, char const *argv[])
 
 	puts("+++++++++++++++++++++++++");
 	UGraph().isConnected(ug);
+
+	puts("+++++++++++++++++++++++++");
+	UGraph().showDegree(ug);
+
+	puts("+++++++++++++++++++++++++");
+	UGraph().hasCycle(ug);
 
 	UGraph().destroy(&ug);
 	return 0;

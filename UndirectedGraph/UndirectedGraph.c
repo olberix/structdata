@@ -432,7 +432,7 @@ static void isConnected(UGraph* graph)
 			}
 		}
 	}
-	//这里可以输出所有连通分量,懒得折腾了
+	//其实这里可以输出所有连通分量,懒得折腾了
 	int rootVex = UNION_ROOT(union_set, 0);
 	for (int i = 1; i < UG_MAX_VERTEX_NUM; i++){
 		if (UNION_ROOT(union_set, i) != rootVex){
@@ -443,9 +443,67 @@ static void isConnected(UGraph* graph)
 	puts("this graph is connected.");
 }
 
-static bool hasCycle(UGraph* graph)
+static inline int* __get_degree(UGraph* graph)
 {
+	static int degree_array[UG_MAX_VERTEX_NUM];
+	for (int i = 0; i < UG_MAX_VERTEX_NUM; i++){
+		UGEdgeNode* edge = graph->adjmulist[i].firstEdge;
+		int degree = 0;
+		while(edge){
+			degree++;
+			if (i == edge->ivex)
+				edge = edge->ilink;
+			else
+				edge = edge->jlink;
+		}
+		degree_array[i] = degree;
+	}
+	return degree_array;
+}
 
+//无向图判断有环,这里采用第二种方法
+//1.DFS(对边进行DFS遍历,遇到已经访问过的边必然有环)
+//2.拓扑排序思想
+//3.并查集,在这里并查集的本质是基于DFS的实现,遍历边是查看两个顶点父结点是否相同,本质就是对边进行DFS访问时是否遇到访问过的边
+static void hasCycle(UGraph* graph)
+{
+	if (graph->edgeNum >= graph->vexNum){
+		puts("this is graph is cycled.");
+		return;
+	}
+	int* degree = __get_degree(graph);
+	for (int i = 0; i < UG_MAX_VERTEX_NUM; i++){
+		if (degree[i] == 1){
+			degree[i] = 0;
+			UGEdgeNode* edge = graph->adjmulist[i].firstEdge;
+			while(edge){
+				if (i == edge->ivex){
+					degree[edge->jvex] -= 1;
+					edge = edge->ilink;
+				}
+				else{
+					degree[edge->ivex] -= 1;
+					edge = edge->jlink;
+				}
+			}
+			i = 0;
+		}
+	}
+	for (int i = 0; i < UG_MAX_VERTEX_NUM; i++)
+		if (degree[i] > 0){
+			puts("this is graph is cycled.");
+			return;
+		}
+
+	puts("this is graph is not cycled.");
+}
+
+static void showDegree(UGraph* graph)
+{
+	int* degree = __get_degree(graph);
+	for (int i = 0; i < UG_MAX_VERTEX_NUM; i++)
+		printf("TD(v%d):%d ", i, degree[i]);
+	puts("");
 }
 
 inline const UGraphOp* GetUGraphOpStruct()
@@ -461,6 +519,7 @@ inline const UGraphOp* GetUGraphOpStruct()
 		.deleteEdge = deleteEdge,
 		.isConnected = isConnected,
 		.hasCycle = hasCycle,
+		.showDegree = showDegree,
 	};
 	return &OpList;
 }
