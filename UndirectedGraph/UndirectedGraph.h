@@ -38,6 +38,7 @@ typedef struct UGraphOp{
 	bool (*hasCycle)(UGraph*);
 	void (*showDegree)(UGraph*);
 	void (*showMiniSpanTree_Kruskal)(UGraph*);
+	void (*showMiniSpanTree_Prim)(UGraph*);
 }UGraphOp;
 
 extern const UGraphOp* GetUGraphOpStruct();

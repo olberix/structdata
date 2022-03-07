@@ -2,7 +2,9 @@
 #include "../SkipList/SkipList.h"
 #include "../DlQueue/DlQueue.h"
 #include "../SqStack/SqStack.h"
-#include "time.h"
+#include "../PriorityQueue/PriorityQueue.h"
+#include <time.h>
+#include <limits.h>
 
 static UGraph* create()
 {
@@ -508,14 +510,9 @@ static void showDegree(UGraph* graph)
 	puts("");
 }
 
-static inline bool __skl_edge_equal_func(const void* lhs, const void* rhs)
+static inline bool __top_func(const void* lhs, const void* rhs)
 {
-	return lhs == rhs;
-}
-
-static inline bool __skl_edge_less_func(const void* lhs, const void* rhs)
-{
-	return ((UGEdgeNode*)rhs)->weight < ((UGEdgeNode*)lhs)->weight;
+	return (*(UGEdgeNode**)rhs)->weight < (*(UGEdgeNode**)lhs)->weight;
 }
 
 //并查集,跳表,优先队列不判重
@@ -525,35 +522,93 @@ static void showMiniSpanTree_Kruskal(UGraph* graph)
 		puts("no minispantree in unconnected graph.");
 		return;
 	}
-	SkipList* skl = SkipList().create(sizeof(UGEdgeNode*), __skl_edge_equal_func, __skl_edge_less_func);
+	SkipList* skl = SkipList().create(sizeof(UGEdgeNode*), default_equal_func_uint64, default_less_func_uint64);
+	PriorityQueue* pQ = PriorityQueue().create(sizeof(UGEdgeNode*), __top_func);
 	for (int i = 0; i < graph->vexNum; i++){
 		UGEdgeNode* edge = graph->adjmulist[i].firstEdge;
 		while(edge){
-			SkipList().insert(skl, &edge);
+			if (SkipList().find(skl, &edge) == -1){
+				SkipList().insert(skl, &edge);
+				PriorityQueue().push(pQ, &edge);
+			}
 			if (edge->ivex == i)
 				edge = edge->ilink;
 			else
 				edge = edge->jlink;
 		}
 	}
+
 	int union_set[UG_MAX_VERTEX_NUM];
 	for (int i = 0; i < UG_MAX_VERTEX_NUM; i++)
 		union_set[i] = i;
 	UGEdgeNode* edge_set[UG_MAX_VERTEX_NUM];
 	int edge_idx = 0;
 	while (edge_idx < UG_MAX_VERTEX_NUM - 1){
-		UGEdgeNode* edge = TOCONSTANT(UGEdgeNode*, SkipList().erase_loc(skl, 0));
+		UGEdgeNode* edge = TOCONSTANT(UGEdgeNode*, PriorityQueue().pop(pQ));
 		if (UNION_ROOT(union_set, edge->ivex) == UNION_ROOT(union_set, edge->jvex))
 			continue;
-		edge_set[edge_idx] = edge;
-		edge_idx++;
+		edge_set[edge_idx++] = edge;
 		UNION_MERGE(union_set, edge->ivex, edge->jvex);
 	}
-	puts("minispantree:");
+	puts("showMiniSpanTree_Kruskal:");
+	int tW = 0;
 	for (int i = 0; i < UG_MAX_VERTEX_NUM - 1; i++){
 		printf("[v%d v%d %d]\t", edge_set[i]->ivex, edge_set[i]->jvex, edge_set[i]->weight);
+		tW += edge_set[i]->weight;
 	}
-	puts("");
+	printf("\ntotal weight:%d\n", tW);
+	PriorityQueue().destroy(&pQ);
+	SkipList().destroy(&skl);
+}
+
+static void showMiniSpanTree_Prim(UGraph* graph)
+{
+	if (!isConnected(graph)){
+		puts("no minispantree in unconnected graph.");
+		return;
+	}
+	bool visited[UG_MAX_VERTEX_NUM];
+	memset(visited, 0, sizeof(visited));
+	visited[0] = true;
+	UGEdgeNode* edge_set[UG_MAX_VERTEX_NUM];
+	int edge_idx = 0;
+	while (edge_idx != UG_MAX_VERTEX_NUM - 1){
+		UGEdgeNode* edge_rec = NULL;
+		int weight = INT_MAX;
+		for (int i = 0; i < UG_MAX_VERTEX_NUM; i++){
+			if (!visited[i])
+				continue;
+			UGEdgeNode* edge = graph->adjmulist[i].firstEdge;
+			while (edge){
+				if (edge->ivex == i){
+					if (!visited[edge->jvex] && edge->weight < weight){
+						edge_rec = edge;
+						weight = edge->weight;
+					}
+					edge = edge->ilink;
+				}
+				else{
+					if (!visited[edge->ivex] && edge->weight < weight){
+						edge_rec = edge;
+						weight = edge->weight;
+					}
+					edge = edge->jlink;
+				}
+			}
+		}
+		if (edge_rec){
+			edge_set[edge_idx++] = edge_rec;
+			visited[edge_rec->ivex] = true;
+			visited[edge_rec->jvex] = true;
+		}
+	}
+	puts("showMiniSpanTree_Prim:");
+	int tW = 0;
+	for (int i = 0; i < UG_MAX_VERTEX_NUM - 1; i++){
+		printf("[v%d v%d %d]\t", edge_set[i]->ivex, edge_set[i]->jvex, edge_set[i]->weight);
+		tW += edge_set[i]->weight;
+	}
+	printf("\ntotal weight:%d\n", tW);
 }
 
 inline const UGraphOp* GetUGraphOpStruct()
@@ -571,6 +626,7 @@ inline const UGraphOp* GetUGraphOpStruct()
 		.hasCycle = hasCycle,
 		.showDegree = showDegree,
 		.showMiniSpanTree_Kruskal = showMiniSpanTree_Kruskal,
+		.showMiniSpanTree_Prim = showMiniSpanTree_Prim,
 	};
 	return &OpList;
 }
