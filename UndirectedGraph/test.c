@@ -18,14 +18,14 @@ int main(int argc, char const *argv[])
 	// UGraph().BFSTraverse(ug);
 	// printf("\n\n\n");
 
-	UGraph().addEdge(ug, 0, 7, 23);
-	UGraph().addEdge(ug, 0, 1, 72);
-	UGraph().addEdge(ug, 0, 2, 16);
-	UGraph().addEdge(ug, 4, 11, 88);
-	UGraph().addEdge(ug, 3, 6, 44);
-	UGraph().addEdge(ug, 7, 9, 53);
-	UGraph().addEdge(ug, 4, 5, 47);
-	UGraph().addEdge(ug, 2, 8, 39);
+	// UGraph().addEdge(ug, 0, 7, 23);
+	// UGraph().addEdge(ug, 0, 1, 72);
+	// UGraph().addEdge(ug, 0, 2, 16);
+	// UGraph().addEdge(ug, 4, 11, 88);
+	// UGraph().addEdge(ug, 3, 6, 44);
+	// UGraph().addEdge(ug, 7, 9, 53);
+	// UGraph().addEdge(ug, 4, 5, 47);
+	// UGraph().addEdge(ug, 2, 8, 39);
 
 	// UGraph().deleteEdge(ug, 1, 3);
 	// UGraph().deleteEdge(ug, 2, 3);
@@ -95,6 +95,9 @@ int main(int argc, char const *argv[])
 
 	puts("+++++++++++++++++++++++++");
 	UGraph().showMiniSpanTree_Prim(ug);
+
+	puts("+++++++++++++++++++++++++");
+	UGraph().showShortestPath_Dijkstra(ug, 5);
 
 	UGraph().destroy(&ug);
 	return 0;

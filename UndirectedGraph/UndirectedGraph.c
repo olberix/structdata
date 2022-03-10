@@ -406,7 +406,7 @@ static int UNION_ROOT(int union_set[], int vex)
 	return vex == union_set[vex] ? vex : (union_set[vex] = UNION_ROOT(union_set, union_set[vex]));
 }
 
-static void UNION_MERGE(int union_set[], int vex_1, int vex_2)
+static inline void UNION_MERGE(int union_set[], int vex_1, int vex_2)
 {
 	union_set[UNION_ROOT(union_set, vex_1)] = union_set[UNION_ROOT(union_set, vex_2)];
 }
@@ -552,7 +552,7 @@ static void showMiniSpanTree_Kruskal(UGraph* graph)
 	}
 	puts("showMiniSpanTree_Kruskal:");
 	int tW = 0;
-	for (int i = 0; i < UG_MAX_VERTEX_NUM - 1; i++){
+	for (int i = 0; i < graph->vexNum - 1; i++){
 		printf("[v%d v%d %d]\t", edge_set[i]->ivex, edge_set[i]->jvex, edge_set[i]->weight);
 		tW += edge_set[i]->weight;
 	}
@@ -604,11 +604,97 @@ static void showMiniSpanTree_Prim(UGraph* graph)
 	}
 	puts("showMiniSpanTree_Prim:");
 	int tW = 0;
-	for (int i = 0; i < UG_MAX_VERTEX_NUM - 1; i++){
+	for (int i = 0; i < graph->vexNum - 1; i++){
 		printf("[v%d v%d %d]\t", edge_set[i]->ivex, edge_set[i]->jvex, edge_set[i]->weight);
 		tW += edge_set[i]->weight;
 	}
 	printf("\ntotal weight:%d\n", tW);
+}
+
+typedef struct UG_VEXWEIGHT{
+	int _vex;
+	int _weight;
+}UG_VEXWEIGHT;
+
+static inline bool __ugvw_top_func(const void* lhs, const void* rhs)
+{
+	return ((UG_VEXWEIGHT*)rhs)->_weight < ((UG_VEXWEIGHT*)lhs)->_weight;
+}
+
+void showShortestPath_Dijkstra(UGraph* graph, int vex)
+{
+	if (vex < 0 || vex >= graph->vexNum){
+		puts("invalid vex.");
+		return;
+	}
+	if (!graph->edgeNum){
+		puts("empty edge set.");
+		return;
+	}
+	int path_rec[UG_MAX_VERTEX_NUM];
+	int path_weight[UG_MAX_VERTEX_NUM];
+	for (int i = 0; i < graph->vexNum; i++)
+		path_weight[i] = INT_MAX;
+	path_weight[vex] = 0;
+	path_rec[vex] = vex;
+	UG_VEXWEIGHT _vw = {._vex = vex, ._weight = path_weight[vex]};
+	PriorityQueue* pQ = PriorityQueue().create(sizeof(UG_VEXWEIGHT), __ugvw_top_func);
+	PriorityQueue().push(pQ, &_vw);
+	bool visited[UG_MAX_VERTEX_NUM];
+	memset(visited, 0, sizeof(visited));
+	
+	while(!PriorityQueue().empty(pQ)){
+		_vw = TOCONSTANT(UG_VEXWEIGHT, PriorityQueue().pop(pQ));
+		if (visited[_vw._vex])
+			continue;
+		visited[_vw._vex] = true;
+		UGEdgeNode* edge = graph->adjmulist[_vw._vex].firstEdge;
+		while(edge){
+			int tW = _vw._weight + edge->weight;
+			if (edge->ivex == _vw._vex){
+				if (path_weight[edge->jvex] > tW){
+					path_rec[edge->jvex] = edge->ivex;
+					path_weight[edge->jvex] = tW;
+					UG_VEXWEIGHT tmp = {._vex = edge->jvex, ._weight = tW};
+					PriorityQueue().push(pQ, &tmp);
+				}
+				edge = edge->ilink;
+			}
+			else{
+				if (path_weight[edge->ivex] > tW){
+					path_rec[edge->ivex] = edge->jvex;
+					path_weight[edge->ivex] = tW;
+					UG_VEXWEIGHT tmp = {._vex = edge->ivex, ._weight = tW};
+					PriorityQueue().push(pQ, &tmp);
+				}
+				edge = edge->jlink;
+			}
+		}
+	}
+
+	printf("shortestPath_Dijkstra from v%d to the others:\n", vex);
+	for (int i = 0; i < graph->vexNum; i++){
+		if (path_weight[i] == INT_MAX){
+			printf("v%d-->v%d total weight:INF path:(nil)\n", vex, i);
+			continue;
+		}
+		int path[UG_MAX_VERTEX_NUM];
+		int idx = 0, loc = i;
+		path[idx++] = loc;
+		do{
+			loc = path_rec[loc];
+			path[idx++] = loc;
+		}while(loc != vex);
+		printf("v%d-->v%d total weight:%d path:(", vex, i, path_weight[i]);
+		for (int j = idx - 1; j >= 0; j--){
+			if (j == 0)
+				printf("%d)\n", path[j]);
+			else
+				printf("%d, ", path[j]);
+		}
+	}
+
+	PriorityQueue().destroy(&pQ);
 }
 
 inline const UGraphOp* GetUGraphOpStruct()
@@ -627,6 +713,7 @@ inline const UGraphOp* GetUGraphOpStruct()
 		.showDegree = showDegree,
 		.showMiniSpanTree_Kruskal = showMiniSpanTree_Kruskal,
 		.showMiniSpanTree_Prim = showMiniSpanTree_Prim,
+		.showShortestPath_Dijkstra = showShortestPath_Dijkstra,
 	};
 	return &OpList;
 }
