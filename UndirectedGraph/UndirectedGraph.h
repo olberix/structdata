@@ -40,6 +40,8 @@ typedef struct UGraphOp{
 	void (*showMiniSpanTree_Kruskal)(UGraph*);
 	void (*showMiniSpanTree_Prim)(UGraph*);
 	void (*showShortestPath_Dijkstra)(UGraph*, int);
+	void (*showShortestPath_Floyd)(UGraph*);
+	void (*showShortestPath_BFS)(UGraph*, int, int);
 }UGraphOp;
 
 extern const UGraphOp* GetUGraphOpStruct();

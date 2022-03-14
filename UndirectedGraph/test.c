@@ -99,6 +99,19 @@ int main(int argc, char const *argv[])
 	puts("+++++++++++++++++++++++++");
 	UGraph().showShortestPath_Dijkstra(ug, 5);
 
+	puts("+++++++++++++++++++++++++");
+	UGraph().showShortestPath_Floyd(ug);
+
+	puts("+++++++++++++++++++++++++");
+	UGraph().showShortestPath_BFS(ug, 3, 11);
+	UGraph().showShortestPath_BFS(ug, 3, 13);
+	UGraph().showShortestPath_BFS(ug, 0, 8);
+	UGraph().showShortestPath_BFS(ug, 0, 5);
+	UGraph().showShortestPath_BFS(ug, 1, 2);
+	UGraph().showShortestPath_BFS(ug, 9, 2);
+	UGraph().showShortestPath_BFS(ug, 1, 6);
+	UGraph().showShortestPath_BFS(ug, 6, 1);
+
 	UGraph().destroy(&ug);
 	return 0;
 }

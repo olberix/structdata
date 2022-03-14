@@ -681,10 +681,10 @@ void showShortestPath_Dijkstra(UGraph* graph, int vex)
 		int path[UG_MAX_VERTEX_NUM];
 		int idx = 0, loc = i;
 		path[idx++] = loc;
-		do{
+		while(loc != vex){
 			loc = path_rec[loc];
 			path[idx++] = loc;
-		}while(loc != vex);
+		}
 		printf("v%d-->v%d total weight:%d path:(", vex, i, path_weight[i]);
 		for (int j = idx - 1; j >= 0; j--){
 			if (j == 0)
@@ -695,6 +695,131 @@ void showShortestPath_Dijkstra(UGraph* graph, int vex)
 	}
 
 	PriorityQueue().destroy(&pQ);
+}
+
+static void showShortestPath_Floyd(UGraph* graph)
+{
+	if (!graph->edgeNum){
+		puts("empty edge set.");
+		return;
+	}
+	int path_rec[UG_MAX_VERTEX_NUM][UG_MAX_VERTEX_NUM];
+	int path_weight[UG_MAX_VERTEX_NUM][UG_MAX_VERTEX_NUM];
+	for (int i = 0; i < graph->vexNum; i++)
+		for (int j = 0; j < graph->vexNum; j++){
+			if (i == j){
+				path_weight[i][i] = 0;
+				path_rec[i][i] = i;
+			}
+			else{
+				path_weight[i][j] = INT_MAX;
+				path_rec[i][j] = -1;
+			}
+		}
+	for (int i = 0; i < graph->vexNum; i++){
+		UGEdgeNode* edge = graph->adjmulist[i].firstEdge;
+		while(edge){
+			path_weight[edge->ivex][edge->jvex] = edge->weight;
+			path_weight[edge->jvex][edge->ivex] = edge->weight;
+			path_rec[edge->ivex][edge->jvex] = edge->ivex;
+			path_rec[edge->jvex][edge->ivex] = edge->jvex;
+			if (edge->ivex == i)
+				edge = edge->ilink;
+			else
+				edge = edge->jlink;
+		}
+	}
+	for (int k = 0; k < graph->vexNum; k++)
+		for (int i = 0; i < graph->vexNum; i++)
+			for (int j = 0; j < graph->vexNum; j++)
+				if ((long long)path_weight[i][j] > (long long)path_weight[i][k] + (long long)path_weight[k][j]){
+					path_weight[i][j] = path_weight[i][k] + path_weight[k][j];
+					path_rec[i][j] = path_rec[k][j];
+				}
+	printf("shortestPath_Floyd between two points:\n");
+	for (int i = 0; i < graph->vexNum; i++)
+		for (int j = i + 1; j < graph->vexNum; j++){
+			if (path_weight[i][j] == INT_MAX){
+				printf("v%d-->v%d total weight:INF path:(nil)\n", i, j);
+				continue;
+			}
+			printf("v%d-->v%d total weight:%d path:(%d, ", i, j, path_weight[i][j], i);
+			int path = path_rec[j][i];
+			while(true){
+				if (path == j){
+					printf("%d)\n", j);
+					break;
+				}
+				printf("%d, ", path);
+				path = path_rec[j][path];
+			}
+		}
+}
+
+static void showShortestPath_BFS(UGraph* graph, int begin_vex, int end_vex)
+{
+	if (!graph->edgeNum){
+		puts("empty edge set.");
+		return;
+	}
+	if (begin_vex < 0 || begin_vex >= graph->vexNum || end_vex < 0 || end_vex >= graph->vexNum || begin_vex == end_vex){
+		puts("invalid vex.");
+		return;
+	}
+	bool find = false;
+	int path_rec[UG_MAX_VERTEX_NUM];
+	path_rec[end_vex] = end_vex;
+	bool visited[UG_MAX_VERTEX_NUM];
+	memset(visited, 0, sizeof(visited));
+	DlQueue* queue = DlQueue().create(sizeof(int));
+	DlQueue().push(queue, &end_vex);
+	while(!DlQueue().empty(queue)){
+		int vex = TOCONSTANT(int, DlQueue().pop(queue));
+		UGEdgeNode* edge = graph->adjmulist[vex].firstEdge;
+		while(edge){
+			if (edge->ivex == vex){
+				if (!visited[edge->jvex]){
+					path_rec[edge->jvex] = edge->ivex;
+					if (edge->jvex == begin_vex){
+						find = true;
+						break;
+					}
+					visited[edge->jvex] = true;
+					DlQueue().push(queue, &(edge->jvex));
+				}
+				edge = edge->ilink;
+			}
+			else{
+				if (!visited[edge->ivex]){
+					path_rec[edge->ivex] = edge->jvex;
+					if (edge->ivex == begin_vex){
+						find = true;
+						break;
+					}
+					visited[edge->ivex] = true;
+					DlQueue().push(queue, &(edge->ivex));
+				}
+				edge = edge->jlink;
+			}
+		}
+		if (find)
+			break;
+	}
+
+	printf("shortestPath_BFS from v%d to v%d:\n", begin_vex, end_vex, begin_vex);
+	if (find){
+		printf("(%d, ", begin_vex);
+		int path = path_rec[begin_vex];
+		while(path != end_vex){
+			printf("%d, ", path);
+			path = path_rec[path];
+		}
+		printf("%d)\n", path);
+	}
+	else
+		printf("(nil)\n");
+
+	DlQueue().destroy(&queue);
 }
 
 inline const UGraphOp* GetUGraphOpStruct()
@@ -714,6 +839,8 @@ inline const UGraphOp* GetUGraphOpStruct()
 		.showMiniSpanTree_Kruskal = showMiniSpanTree_Kruskal,
 		.showMiniSpanTree_Prim = showMiniSpanTree_Prim,
 		.showShortestPath_Dijkstra = showShortestPath_Dijkstra,
+		.showShortestPath_Floyd = showShortestPath_Floyd,
+		.showShortestPath_BFS = showShortestPath_BFS,
 	};
 	return &OpList;
 }
