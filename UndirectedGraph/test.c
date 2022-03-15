@@ -18,7 +18,7 @@ int main(int argc, char const *argv[])
 	// UGraph().BFSTraverse(ug);
 	// printf("\n\n\n");
 
-	// UGraph().addEdge(ug, 0, 7, 23);
+	UGraph().addEdge(ug, 0, 7, 23);
 	// UGraph().addEdge(ug, 0, 1, 72);
 	// UGraph().addEdge(ug, 0, 2, 16);
 	// UGraph().addEdge(ug, 4, 11, 88);

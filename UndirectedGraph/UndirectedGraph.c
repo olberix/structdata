@@ -22,7 +22,7 @@ static UGraph* create()
 			enode->jvex = j;
 			enode->weight = rand() % UG_MAX_WEIGHT + 1;
 			edgeNum++;
-			printf("gen--[v%d v%d %d]\n", i, j, enode->weight);
+			printf("gen--(v%-2d v%-2d %3d)\n", i, j, enode->weight);
 
 			UGVertexNode i_vex = g->adjmulist[i];
 			if (i_vex.firstEdge){
@@ -120,7 +120,7 @@ static void showGraph(UGraph* graph)
 				if (!edge || SkipList().find(skl, &edge) != -1)
 					continue;
 				SkipList().insert(skl, &edge);
-				printf("[v%d v%d %d]\t", edge->ivex, edge->jvex, edge->weight);
+				printf("(v%-2d v%-2d %3d)\t", edge->ivex, edge->jvex, edge->weight);
 				DlQueue().push(queue, &(edge->ilink));
 				DlQueue().push(queue, &(edge->jlink));
 				count++;
@@ -553,7 +553,7 @@ static void showMiniSpanTree_Kruskal(UGraph* graph)
 	puts("showMiniSpanTree_Kruskal:");
 	int tW = 0;
 	for (int i = 0; i < graph->vexNum - 1; i++){
-		printf("[v%d v%d %d]\t", edge_set[i]->ivex, edge_set[i]->jvex, edge_set[i]->weight);
+		printf("(v%-2d v%-2d %3d)\t", edge_set[i]->ivex, edge_set[i]->jvex, edge_set[i]->weight);
 		tW += edge_set[i]->weight;
 	}
 	printf("\ntotal weight:%d\n", tW);
@@ -605,7 +605,7 @@ static void showMiniSpanTree_Prim(UGraph* graph)
 	puts("showMiniSpanTree_Prim:");
 	int tW = 0;
 	for (int i = 0; i < graph->vexNum - 1; i++){
-		printf("[v%d v%d %d]\t", edge_set[i]->ivex, edge_set[i]->jvex, edge_set[i]->weight);
+		printf("(v%-2d v%-2d %3d)\t", edge_set[i]->ivex, edge_set[i]->jvex, edge_set[i]->weight);
 		tW += edge_set[i]->weight;
 	}
 	printf("\ntotal weight:%d\n", tW);
@@ -685,7 +685,7 @@ void showShortestPath_Dijkstra(UGraph* graph, int vex)
 			loc = path_rec[loc];
 			path[idx++] = loc;
 		}
-		printf("v%d-->v%d total weight:%d path:(", vex, i, path_weight[i]);
+		printf("v%-2d-->v%-2d total weight:%-3d path:(", vex, i, path_weight[i]);
 		for (int j = idx - 1; j >= 0; j--){
 			if (j == 0)
 				printf("%d)\n", path[j]);
@@ -740,10 +740,10 @@ static void showShortestPath_Floyd(UGraph* graph)
 	for (int i = 0; i < graph->vexNum; i++)
 		for (int j = i + 1; j < graph->vexNum; j++){
 			if (path_weight[i][j] == INT_MAX){
-				printf("v%d-->v%d total weight:INF path:(nil)\n", i, j);
+				printf("v%--2d-->v%-2d total weight:INF path:(nil)\n", i, j);
 				continue;
 			}
-			printf("v%d-->v%d total weight:%d path:(%d, ", i, j, path_weight[i][j], i);
+			printf("v%-2d-->v%-2d total weight:%3d path:(%d, ", i, j, path_weight[i][j], i);
 			int path = path_rec[j][i];
 			while(true){
 				if (path == j){
