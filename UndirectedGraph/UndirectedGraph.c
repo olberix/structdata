@@ -15,49 +15,49 @@ static UGraph* create()
 		vex.data = j;
 		vex.firstEdge = NULL;
 		for (int i = 0; i < j; i++){
-			if (rand() % 10000 <= UG_GEN_EDGE_RATE * (i + 1) / (j + 1)){
-				POINTCREATE_INIT(UGEdgeNode*, enode, UGEdgeNode, sizeof(UGEdgeNode));
-				enode->ivex = i;
-				enode->jvex = j;
-				enode->weight = rand() % UG_MAX_WEIGHT + 1;
-				edgeNum++;
-				printf("gen--[v%d v%d %d]\n", i, j, enode->weight);
+			if (rand() % 10000 > UG_GEN_EDGE_RATE * (i + 1) / (j + 1))
+				continue;
+			POINTCREATE_INIT(UGEdgeNode*, enode, UGEdgeNode, sizeof(UGEdgeNode));
+			enode->ivex = i;
+			enode->jvex = j;
+			enode->weight = rand() % UG_MAX_WEIGHT + 1;
+			edgeNum++;
+			printf("gen--[v%d v%d %d]\n", i, j, enode->weight);
 
-				UGVertexNode i_vex = g->adjmulist[i];
-				if (i_vex.firstEdge){
-					UGEdgeNode* last = i_vex.firstEdge;
-					while(true){
-						if (last->ivex == i){
-							if (last->ilink)
-								last = last->ilink;
-							else{
-								last->ilink = enode;
-								break;
-							}
-						}
+			UGVertexNode i_vex = g->adjmulist[i];
+			if (i_vex.firstEdge){
+				UGEdgeNode* last = i_vex.firstEdge;
+				while(true){
+					if (last->ivex == i){
+						if (last->ilink)
+							last = last->ilink;
 						else{
-							if (last->jlink)
-								last = last->jlink;
-							else{
-								last->jlink = enode;
-								break;
-							}
+							last->ilink = enode;
+							break;
+						}
+					}
+					else{
+						if (last->jlink)
+							last = last->jlink;
+						else{
+							last->jlink = enode;
+							break;
 						}
 					}
 				}
-				else
-					i_vex.firstEdge = enode;
-				g->adjmulist[i] = i_vex;
-				
-				if (vex.firstEdge){
-					UGEdgeNode* last = vex.firstEdge;
-					while(last->jlink)
-						last = last->jlink;
-					last->jlink = enode;
-				}
-				else
-					vex.firstEdge = enode;
 			}
+			else
+				i_vex.firstEdge = enode;
+			g->adjmulist[i] = i_vex;
+			
+			if (vex.firstEdge){
+				UGEdgeNode* last = vex.firstEdge;
+				while(last->jlink)
+					last = last->jlink;
+				last->jlink = enode;
+			}
+			else
+				vex.firstEdge = enode;
 		}
 		g->adjmulist[j] = vex;
 	}
@@ -766,9 +766,8 @@ static void showShortestPath_BFS(UGraph* graph, int begin_vex, int end_vex)
 		puts("invalid vex.");
 		return;
 	}
-	bool find = false;
 	int path_rec[UG_MAX_VERTEX_NUM];
-	path_rec[end_vex] = end_vex;
+	path_rec[begin_vex] = -1;
 	bool visited[UG_MAX_VERTEX_NUM];
 	memset(visited, 0, sizeof(visited));
 	DlQueue* queue = DlQueue().create(sizeof(int));
@@ -780,10 +779,8 @@ static void showShortestPath_BFS(UGraph* graph, int begin_vex, int end_vex)
 			if (edge->ivex == vex){
 				if (!visited[edge->jvex]){
 					path_rec[edge->jvex] = edge->ivex;
-					if (edge->jvex == begin_vex){
-						find = true;
+					if (edge->jvex == begin_vex)
 						break;
-					}
 					visited[edge->jvex] = true;
 					DlQueue().push(queue, &(edge->jvex));
 				}
@@ -792,22 +789,20 @@ static void showShortestPath_BFS(UGraph* graph, int begin_vex, int end_vex)
 			else{
 				if (!visited[edge->ivex]){
 					path_rec[edge->ivex] = edge->jvex;
-					if (edge->ivex == begin_vex){
-						find = true;
+					if (edge->ivex == begin_vex)
 						break;
-					}
 					visited[edge->ivex] = true;
 					DlQueue().push(queue, &(edge->ivex));
 				}
 				edge = edge->jlink;
 			}
 		}
-		if (find)
+		if (path_rec[begin_vex] != -1)
 			break;
 	}
 
 	printf("shortestPath_BFS from v%d to v%d:\n", begin_vex, end_vex, begin_vex);
-	if (find){
+	if (path_rec[begin_vex] != -1){
 		printf("(%d, ", begin_vex);
 		int path = path_rec[begin_vex];
 		while(path != end_vex){
