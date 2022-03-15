@@ -2,8 +2,8 @@
 #define _DIRECTED_GRAPH__
 #include "../common/common.h"
 
-#define DG_MAX_VERTEX_NUM 20
-#define DG_GEN_EDGE_RATE 3500
+#define DG_MAX_VERTEX_NUM 10
+#define DG_GEN_EDGE_RATE 3000
 #define DG_MAX_WEIGHT 100
 
 typedef struct DGEdgeNode{
@@ -26,6 +26,7 @@ typedef struct DGraphOp{
 	DGraph* (*create)();
 	void (*destroy)(DGraph**);
 	void (*showGraph)(DGraph*);
+	void (*showTopologicalSort)(DGraph*);
 }DGraphOp;
 
 extern const DGraphOp* GetDGraphOpStruct();
