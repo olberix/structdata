@@ -178,21 +178,22 @@ static void showAllTopologicalSort(DGraph* graph)
 		for (int i = 0; i < trace_idx; i++)
 			printf("%d, ", topoList[i]);
 		printf("%d\n", topoList[trace_idx]);
-		indegree[topoList[trace_idx]]++;
 		while(SqStack().empty(trace_stack[trace_idx])){
-			DGEdgeNode* edge = graph->orthlist[topoList[--trace_idx]].firstout;
+			if (trace_idx == 0)
+				break;
 			indegree[topoList[trace_idx]]++;
+			DGEdgeNode* edge = graph->orthlist[topoList[--trace_idx]].firstout;
 			while(edge){
 				indegree[edge->headvex]++;
 				edge = edge->tlink;
 			}
-			if (trace_idx == 0)
-				break;
 		}
-		if (trace_idx >= 0)
-			topoList[trace_idx++] = TOCONSTANT(int, SqStack().pop(trace_stack[trace_idx]));
-		else
+		if (trace_idx == 0 && SqStack().empty(trace_stack[0]))
 			break;
+		indegree[topoList[trace_idx]]++;
+		topoList[trace_idx] = TOCONSTANT(int, SqStack().pop(trace_stack[trace_idx]));
+		indegree[topoList[trace_idx]]--;
+		trace_idx++;
 	}
 	for (int i = 0; i < graph->vexNum; i++)
 		SqStack().destroy(trace_stack + i);
