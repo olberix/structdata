@@ -8,8 +8,11 @@ int main(int argc, char const *argv[])
 	puts("+++++++++++++++++++++++++");
 	DGraph().showGraph(dg);
 
+	// puts("+++++++++++++++++++++++++");
+	// DGraph().showTopologicalSort(dg);
+
 	puts("+++++++++++++++++++++++++");
-	DGraph().showTopologicalSort(dg);
+	DGraph().showAllTopologicalSort(dg);
 
 	DGraph().destroy(&dg);
 

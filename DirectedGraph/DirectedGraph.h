@@ -27,6 +27,7 @@ typedef struct DGraphOp{
 	void (*destroy)(DGraph**);
 	void (*showGraph)(DGraph*);
 	void (*showTopologicalSort)(DGraph*);
+	void (*showAllTopologicalSort)(DGraph*);
 }DGraphOp;
 
 extern const DGraphOp* GetDGraphOpStruct();

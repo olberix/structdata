@@ -1,8 +1,5 @@
 #include "DirectedGraph.h"
-#include "../SkipList/SkipList.h"
-#include "../DlQueue/DlQueue.h"
 #include "../SqStack/SqStack.h"
-#include "../PriorityQueue/PriorityQueue.h"
 #include <time.h>
 #include <limits.h>
 
@@ -100,7 +97,6 @@ static void showGraph(DGraph* graph)
 static void showTopologicalSort(DGraph* graph)
 {
 	int indegree[DG_MAX_VERTEX_NUM];
-	memset(indegree, 0, sizeof(indegree));
 	for (int i = 0; i < graph->vexNum; i++){
 		int degree = 0;
 		DGEdgeNode* edge = graph->orthlist[i].firstin;
@@ -135,6 +131,73 @@ static void showTopologicalSort(DGraph* graph)
 	puts("");
 }
 
+static void showAllTopologicalSort(DGraph* graph)
+{
+	int indegree[DG_MAX_VERTEX_NUM];
+	for (int i = 0; i < graph->vexNum; i++){
+		int degree = 0;
+		DGEdgeNode* edge = graph->orthlist[i].firstin;
+		while(edge){
+			degree++;
+			edge = edge->hlink;
+		}
+		indegree[i] = degree;
+	}
+	int topoList[DG_MAX_VERTEX_NUM];
+	SqStack* trace_stack[DG_MAX_VERTEX_NUM];
+	for (int i = 0; i < graph->vexNum; i++)
+		trace_stack[i] = SqStack().create(sizeof(int), NULL);
+	int trace_idx = 0;
+	while(true){
+		while(true){
+			for (int i = 0; i < graph->vexNum; i++){
+				if (indegree[i])
+					continue;
+				SqStack().push(trace_stack[trace_idx], &i);
+			}
+			if (SqStack().empty(trace_stack[trace_idx])){
+				printf("this graph is cycled.%d\n", trace_idx);
+				for (int i = 0; i < graph->vexNum; i++)
+					printf("%d, ", indegree[i]);
+				puts("");
+				for (int i = 0; i < graph->vexNum; i++)
+					SqStack().destroy(trace_stack + i);
+				return;
+			}
+			topoList[trace_idx] = TOCONSTANT(int, SqStack().pop(trace_stack[trace_idx]));
+			indegree[topoList[trace_idx]]--;
+			DGEdgeNode* edge = graph->orthlist[topoList[trace_idx]].firstout;
+			while(edge){
+				indegree[edge->headvex]--;
+				edge = edge->tlink;
+			}
+			if (++trace_idx == graph->vexNum)
+				break;
+		}
+		trace_idx--;
+		for (int i = 0; i < trace_idx; i++)
+			printf("%d, ", topoList[i]);
+		printf("%d\n", topoList[trace_idx]);
+		indegree[topoList[trace_idx]]++;
+		while(SqStack().empty(trace_stack[trace_idx])){
+			DGEdgeNode* edge = graph->orthlist[topoList[--trace_idx]].firstout;
+			indegree[topoList[trace_idx]]++;
+			while(edge){
+				indegree[edge->headvex]++;
+				edge = edge->tlink;
+			}
+			if (trace_idx == 0)
+				break;
+		}
+		if (trace_idx >= 0)
+			topoList[trace_idx++] = TOCONSTANT(int, SqStack().pop(trace_stack[trace_idx]));
+		else
+			break;
+	}
+	for (int i = 0; i < graph->vexNum; i++)
+		SqStack().destroy(trace_stack + i);
+}
+
 inline const DGraphOp* GetDGraphOpStruct()
 {
 	static const DGraphOp OpList = {
@@ -142,6 +205,7 @@ inline const DGraphOp* GetDGraphOpStruct()
 		.destroy = destroy,
 		.showGraph = showGraph,
 		.showTopologicalSort = showTopologicalSort,
+		.showAllTopologicalSort = showAllTopologicalSort,
 	};
 	return &OpList;
 }
