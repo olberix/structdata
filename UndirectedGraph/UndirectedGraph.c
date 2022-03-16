@@ -740,7 +740,7 @@ static void showShortestPath_Floyd(UGraph* graph)
 	for (int i = 0; i < graph->vexNum; i++)
 		for (int j = i + 1; j < graph->vexNum; j++){
 			if (path_weight[i][j] == INT_MAX){
-				printf("v%--2d-->v%-2d total weight:INF path:(nil)\n", i, j);
+				printf("v%-2d-->v%-2d total weight:INF path:(nil)\n", i, j);
 				continue;
 			}
 			printf("v%-2d-->v%-2d total weight:%3d path:(%d, ", i, j, path_weight[i][j], i);
@@ -801,7 +801,7 @@ static void showShortestPath_BFS(UGraph* graph, int begin_vex, int end_vex)
 			break;
 	}
 
-	printf("shortestPath_BFS from v%d to v%d:\n", begin_vex, end_vex, begin_vex);
+	printf("shortestPath_BFS from v%d to v%d:\n", begin_vex, end_vex);
 	if (path_rec[begin_vex] != -1){
 		printf("(%d, ", begin_vex);
 		int path = path_rec[begin_vex];
