@@ -15,7 +15,7 @@ static UGraph* create()
 		vex.data = j;
 		vex.firstEdge = NULL;
 		for (int i = 0; i < j; i++){
-			if (rand() % 10000 > UG_GEN_EDGE_RATE * (i + 1) / (j + 1))
+			if (rand() % 10000 + 1 > UG_GEN_EDGE_RATE * (i + 1) / (j + 1))
 				continue;
 			POINTCREATE_INIT(UGEdgeNode*, enode, UGEdgeNode, sizeof(UGEdgeNode));
 			enode->ivex = i;
@@ -99,7 +99,7 @@ static void showGraph(UGraph* graph)
 		return;
 	}
 	if (graph->vexNum == 1)
-		printf("vertex:0\nv0\n");
+		printf("vertex:1\nv0\n");
 	else
 		printf("vertex:%d\nv0~v%d\n", graph->vexNum, graph->vexNum - 1);
 
