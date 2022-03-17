@@ -1,16 +1,16 @@
-# <span id="11">C Structdata Project</span>
+# <span id="11">C Structdata</span>
 这是使用Clang实现的数据结构代码，创建于2021/9/12，这里面包含了大部分常见的数据结构实现，后面还会继续添加完善；开始这个project的初衷是为了重新学习数据结构，但是为了以后能在某些地方复用这些代码，所以会尽量将这部分代码写得通用，这也体现在了这个项目内部，如栈结构复用了数组代码，树结构引用了栈和队列，哈希结构引用了链表和红黑树等
   
 *	部分代码只适合运行于64位的linux平台，并且内核版本不低于linux3.10
 *	所有的实现都不是线程安全
 *	通过void\*实现数据泛型，在创建数据结构的时候会传入键值大小，相关操作函数等
 *	某种数据结构的实现都只包含了一个.h和一个.c文件，.c文件里面的函数实现大部分为静态函数，其中以全大写或"\_\_"开始命名的函数为内部函数，不提供外部使用；在.h文件中提供了一个包含操作接口的结构体，可以通过相关函数获取这个结构体单例进而操作具体的数据结构
-  
+
 |线性结构|[SqList](#1)|[SqStack](#2)|[DuCirLinkList](#3)|[DlQueue](#4)|**[SkipList](#10)**|**[PriorityQueue](#PriorityQueue)**|
 |:----|:----|:----|:----|:----|:----|:----|
 |**树结构**|**[ThrtAVLTree](#5)**|**[RBTree](#6)**|**[B-Tree](#7)**|**[B+Tree](#8)**|
-|**其他结构**|**[HashTable](#9)**|**[Graph](#Graph)**|
-  
+|**其他结构**|**[HashTable](#9)**|**[UnDirectedGraph](#UnDirectedGraph)**|**[DirectedGraph](#DirectedGraph)**|**[Graph](#Graph)**|
+
 ## <span id="1">SqList</span>
 ```c
 typedef struct SqList{
@@ -389,6 +389,33 @@ PriorityQueue是通过二叉堆实现的优先队列，继承了SqList的实现�
 
 [**参考链接：**]()&nbsp;[图解：什么是二叉堆](https://mp.weixin.qq.com/s/wVrklsni7WyuCQkNlbrbUQ)  
 
+## <span id="UnDirectedGraph">UnDirectedGraph</span>
+```
+#define UG_MAX_VERTEX_NUM 15
+#define UG_GEN_EDGE_RATE 3500
+#define UG_MAX_WEIGHT 100
+typedef struct UGEdgeNode{
+	struct UGEdgeNode* ilink;
+	struct UGEdgeNode* jlink;
+	int ivex;
+	int jvex;
+	int weight;
+}UGEdgeNode;
+
+typedef struct UGVertexNode{
+	int data;
+	UGEdgeNode* firstEdge;
+}UGVertexNode;
+
+typedef struct UGraph{
+	UGVertexNode adjmulist[UG_MAX_VERTEX_NUM];
+	int vexNum;
+	int edgeNum;
+}UGraph;
+```
+
+## <span id="DirectedGraph">DirectedGraph</span>
+
 ## <span id="Graph">Graph</span>
 图的概念实在太多，为防止复习时翻书，现摘抄如下，以下内容摘自《数据结构C语言版第2版》，部分摘自 [图解：什么是图](https://mp.weixin.qq.com/s/ZP8OnqftqCr9q3wjBg6TMA)  
 
@@ -418,6 +445,9 @@ PriorityQueue是通过二叉堆实现的优先队列，继承了SqList的实现�
 	+ 对于包含$n$个顶点的无向完全图最多包含$n^{n-2}$棵生成树，这是Cayley公式，具体证明看 [经典证明：Prüfer编码与Cayley公式](http://www.matrix67.com/blog/archives/682#comment-1221689)
 + [**最小代价生成树(minimum cost spanning tree)**]() 在一个连通网所有生成树中，各边的代价之和最小的那棵树称为该连通网的最小代价生成树，简称最小生成树
 + [**有向树和生成森林(spanning forest)**]() 有一个顶点入度为0，其余顶点入度均为1的有向图称为有向树；一个有向图的生成森林是由若干棵有向树组成，含有图中的全部顶点，但只有足以构成若干棵不相交的有向树的弧
++ [**DGA图(directed acycline graph)**]() 有向无环图
++ [**AOV-网(activity on vertex network)**]() 用顶点表示活动，用弧表示活动间优先关系的DGA图称为AOV-网
++ [**AOE-网(activity on edge network)**]() 用顶点表示事件，弧表示活动，权表示活动的消耗的DGA图称为AOE-网
 
 > 图的存储方式
 
@@ -443,7 +473,7 @@ PriorityQueue是通过二叉堆实现的优先队列，继承了SqList的实现�
 
 + 十字链表(orthogonal list)
 
-	+ 十字链表是有向图的另一种链式存储结构，可以看作邻接表和逆邻接表的组合体，可以容易求出顶点的出度和入度，且不存在重复边，在某些有向图的引用中，十字链表是很有用的工具
+	+ 十字链表是有向图的另一种链式存储结构，可以看作邻接表和逆邻接表的组合体，可以容易求出顶点的出度和入度，且不存在重复边，在某些有向图的应用中，十字链表是很有用的工具
 
 + 邻接多重表(adjacency multilist)
 
@@ -453,4 +483,4 @@ PriorityQueue是通过二叉堆实现的优先队列，继承了SqList的实现�
 
 	+ 边集数组是由两个一维数组构成，一个是存储顶点的信息，另一个存储边的信息，这个边数组每个元素由一条边的起点下标(begin)，终点下标(end)和权(weight)组成；带权图（网）另一种存储结构是边集数组，它适用于一些以边为主的操作
 
-邻接矩阵，邻接表和逆邻接表对于有向图和无向图都适用，但他们更关注顶点的操作，其中邻接矩阵容易判断两个顶点之间是否有边，顺序操作逻辑清晰，但不便于增加和删除结点，也不便于统计边的数目，空间利用率较低，邻接表和逆邻接表反之；十字链表和邻接多重表更加关注的是对边的操作，比如对搜索过的边作记号或者删除一条边等，其中十字链表适用于有向图，邻接多重表适用于无向图；边集数组适用于带权图对边的操作，但很不便于通过顶点到边的映射
+邻接矩阵，邻接表和逆邻接表对于有向图和无向图都适用，但他们更关注顶点的操作，其中邻接矩阵容易判断两个顶点之间是否有边，顺序操作逻辑清晰，但不便于增加和删除结点，也不便于统计边的数目，空间利用率较低，邻接表和逆邻接表反之；十字链表和邻接多重表更加关注的是对边的操作，比如对搜索过的边作记号或者删除一条边等，其中十字链表适用于有向图，邻接多重表适用于无向图；边集数组适用于带权图对边的操作，但不便于通过顶点到边的映射
