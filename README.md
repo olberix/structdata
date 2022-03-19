@@ -390,7 +390,7 @@ PriorityQueue是通过二叉堆实现的优先队列，继承了SqList的实现�
 [**参考链接：**]()&nbsp;[图解：什么是二叉堆](https://mp.weixin.qq.com/s/wVrklsni7WyuCQkNlbrbUQ)  
 
 ## <span id="UnDirectedGraph">UnDirectedGraph</span>
-```
+```c
 #define UG_MAX_VERTEX_NUM 15
 #define UG_GEN_EDGE_RATE 3500
 #define UG_MAX_WEIGHT 100
@@ -461,9 +461,49 @@ Floyd算法是求每一对顶点之间的最短路径，基于公式$D^{(k)}[i][
 		1. 在$v_i$和$v_j$之间加入$v_0$，比较$(v_i, v_j)$和$(v_i, 0, v_j)$的路径长度，取较短者作为$(v_i, v_j)$新的路径长度  
 		2. 在$v_i$和$v_j$之间加入$v_1$，比较$(v_i, v_j)$和$(v_i, ..., v_k)+(v_k, ..., v_j)$的路径长度，取较短者更新  
 		3. 重复上面步骤直至加入所有顶点比较  
-可以看出，方阵$D^{(k)}$的计算基于动态规划思想，每一次的计算都是基于前一次计算所得的最短路径；从这点看，教材的思路便具有了迷惑性，教材把每次加入比较顶点与计算次序相绑定，科学一点的理解应该是每次加入不同的中转点，比较上一次计算的路径长度与经过中转点的路径长度；比如假设有一个array[4]={4,2,1,3}保存了所有顶点序列，则公式可以表示为$D^{(k)}[i][j]=Min\{D^{(k-1)}[i][j], D^{(k-1)}[i][array[k]] + D^{(k-1)}[array[k]][j]\}$，不过在实际编程中，肯定是利用原公式的技巧性，但思路还需按照动态规划的思想去理解
+可以看出，方阵$D^{(k)}$的计算基于动态规划思想，每一次的计算都是基于前一次计算所得的最短路径；从这点看，教材的思路便具有了迷惑性，教材把每次加入比较顶点与计算次序相绑定，科学一点的理解应该是每次加入不同的中转点，比较上一次计算的路径长度与经过中转点的路径长度；比如假设有一个array[4]={4,2,1,3}保存了所有顶点序列，则公式可以表示为$D^{(k)}[i][j]=Min\{D^{(k-1)}[i][j], D^{(k-1)}[i][array[k]] + D^{(k-1)}[array[k]][j]\}$，不过在实际编程中，肯定是利用原公式的技巧性，但思路还需按照动态规划的思想去理解  
+
+[**参考链接：**]()&nbsp;[图解：什么是图](https://mp.weixin.qq.com/s/ZP8OnqftqCr9q3wjBg6TMA)&nbsp;&nbsp;[图解：什么是最小生成树](https://mp.weixin.qq.com/s/cxO3g4ka9Oe6fIU8t7UelQ)&nbsp;&nbsp;[图解：最短路径之迪杰斯特拉算法](https://mp.weixin.qq.com/s/7firiLaFo48Pb_gRzQKV3A)&nbsp;&nbsp;[图解：最短路径之弗洛伊德算法](https://mp.weixin.qq.com/s/bImTqX1aEIXV88WZvISukA)&nbsp;&nbsp;[并查集](https://zhuanlan.zhihu.com/p/93647900/)&nbsp;&nbsp;[无向图连通性判断的五种方法](https://blog.csdn.net/i4053/article/details/84190926)  
 
 ## <span id="DirectedGraph">DirectedGraph</span>
+```c
+#define DG_MAX_VERTEX_NUM 9
+#define DG_GEN_EDGE_RATE 0
+#define DG_MAX_WEIGHT 100
+typedef struct DGEdgeNode{
+	int headvex, tailvex;
+	int weight;
+	struct DGEdgeNode *hlink, *tlink;
+}DGEdgeNode;
+
+typedef struct DGVertexNode{
+	int data;
+	DGEdgeNode *firstin, *firstout;
+}DGVertexNode;
+
+typedef struct DGraph{
+	DGVertexNode orthlist[DG_MAX_VERTEX_NUM];
+	int vexNum, edgeNum;
+}DGraph;
+```
+DirectedGraph是使用十字链表实现的有向图，在上面无向图中已经实现图的大部分算法，所以在这里只实现拓扑排序和关键路径算法
+
+> 拓扑排序
+
+拓扑排序就是将AOV-网中所有顶点排成一个线性序列，该序列满足：若在AOV-网中顶点$v_i$到顶点$v_j$有一条路径，则在该线性序列中的顶点$v_i$必定在顶点$v_j$之前，得到拓扑序列只需重复以下步骤：弹出入度为0的顶点，并将以此顶点为尾的弧的弧头顶点入度减1，直至弹出了所有顶点；得到一个拓扑序列比较简单，难点在于输出所有拓扑排序，具体步骤如下：
+
+1. 建立所有顶点的入度数组I，建立拓扑序列数组A，初始化栈数组S，初始化回溯index=0，
+2. 从I中取出所有入度为0的顶点，插入S[index]中，弹出S[index]首个顶点v赋值到A[index]中，然后将v和v所有邻接点在I的入度减1，最后index自加1
+3. 重复步骤2，直至index等于图顶点数（index从0开始算），此时A存储了新的拓扑序列，输出A
+4. 将A[--index]记录的顶点v和v所有邻接点的入度+1，回退index
+5. 重复步骤4，直至S[index]不为空，弹出S[index++]的下一个元素v，然后将v和v所有邻接点在I的入度减1，转到步骤2
+6. 如果在步骤5中index减到小于0，则说明输出了所有拓扑序列，输出结束
+
+> 关键路径
+
+
+
+[**参考链接：**]()&nbsp;[图解：什么是关键路径？](https://mp.weixin.qq.com/s/A3cKSHCk_M_yWv5VLeiVyA)
 
 ## <span id="Graph">Graph</span>
 图的概念实在太多，为防止复习时翻书，现摘抄如下，以下内容摘自《数据结构C语言版第2版》，部分摘自 [图解：什么是图](https://mp.weixin.qq.com/s/ZP8OnqftqCr9q3wjBg6TMA)  
