@@ -122,8 +122,8 @@ RBTree引理：一棵有$N$个结点的红黑树高度 $h<=2log_2 {(N+1)}$ ，�
 3. 因为 $h<=2h'$ ，故 $h<=2log_2 {(N+1)}$ ，所以RBTree的查找复杂度为 $log_2 N$ 
 
 RBTree插入和删除步骤：  
-<span id="6-1">![insert](https://github.com/ccencon/structdata/blob/main/images/rbtree_insert.png)</span>  
-<span id="6-2">![erase](https://github.com/ccencon/structdata/blob/main/images/rbtree_erase.png)</span>  
+<span id="6-1">![insert](https://github.com/olberix/structdata/blob/main/images/rbtree_insert.png)</span>  
+<span id="6-2">![erase](https://github.com/olberix/structdata/blob/main/images/rbtree_erase.png)</span>  
 
 [**参考链接：**]()&nbsp;[红黑树上篇](https://mp.weixin.qq.com/s/DXh93cQaKRgsKccmoQOAjQ)&nbsp;&nbsp;[红黑树中篇](https://mp.weixin.qq.com/s/tnbbvgPyqz0pEpA76rn_1g)&nbsp;&nbsp;[红黑树下篇](https://mp.weixin.qq.com/s/oAyiRC_O-N5CHqAjt2va9w)&nbsp;&nbsp;[通过2-3-4树理解红黑树](https://zhuanlan.zhihu.com/p/269069974)
 ## <span id="7">B-Tree</span>
@@ -157,7 +157,7 @@ typedef struct BTree{
 
 B树实现依赖了文件系统，除了基本的文件操作外，需要另外注意两个接口函数[**fallocate**](https://blog.csdn.net/weixin_36145588/article/details/78822837)和[**lseek**](https://www.zhihu.com/question/407305048/answer/1358083582)，fallocate函数可以对文件进行打洞并归还磁盘空间，这是本文B树实现结点删除的基础；lseek函数在linux3.10之后的文件系统版本提供了另外两个参数SEEK_DATA和SEEK_HOLE（编译时需要加上宏_GNU_SOURCE），其中SEEK_HOLE可以使文件偏移到指定位置开始的第一个空洞位置，如果没有空洞则返回文件尾，新结点插入时便通过此参数找到空洞位置进行写入，使文件变得充分紧凑；需要特别注意的是，SEEK_HOLE总是以磁盘块为单位进行空洞查找（猜测是直接遍历inode中的block数组？），而B树结点大小往往以页大小为基准，所以向文件写入一个结点时，剩下的页空间需要以0进行填充  
 
-![BTree](https://github.com/ccencon/structdata/blob/main/images/BTree.png)  
+![BTree](https://github.com/olberix/structdata/blob/main/images/BTree.png)  
 
 通过SEEK_HOLE查找写入地址的方式并不高效，为了使下一次得到正确的地址必须在每次新写入结点时同步磁盘数据，这种方式不仅IO利用率低，耗时也急剧增加，如果改用位图的实现便可消除这个影响，[B+Tree](#8)的实现便采用了这种方法  
 
@@ -244,7 +244,7 @@ typedef struct BPTree{
 ```
 这同样是基于外存实现的B+树（非聚簇实现），在上面[B-Tree](#7)的实现中，IO利用率并不理想，这里结合位图的方式，实现了更高的存储效率。同样的，B+树新创建的时候会创建3个文件：元文件，索引文件和数据文件；元文件中，因为其特殊性采用了[mmap](https://www.cnblogs.com/huxiao-tee/p/4660352.html#_labelTop)映射方式进行文件存取，文件起始用一页空间记录B+树的meta信息，剩余空间记录了索引和数据的地址位信息，同样以一页为单位，通过索引页容纳关键字数和数据页容纳数据行数计算出具体的分界a，即前a个字节是索引位图，剩余字节是数据位图；索引文件中，每一页分别记录了是否叶子，关键字数，关键字行，地址行等信息，结点分裂时，通过元文件具体bit位计算出空闲页位置并将bit位置1，结点删除时，将整个索引页打洞归还磁盘空间并将元文件对应bit位置0；数据文件中，每一页分别记录了当前页已用数据行数，数据行位图所占字节，数据行位图和实际的数据行，插入新数据时，通过元文件找到未写满的数据页地址，再通过当前数据位图找到空闲的数据行写入，如果当前页写满，便将元文件对应bit位置1，删除数据后，若整个数据页已经空闲，则打洞当前页，若删除前整页已经写满，则将元文件对应bit位置0，插入和删除操作同样需要更新当前页数据行位图  
 
-![B+Tree](https://github.com/ccencon/structdata/blob/main/images/B+Tree.png)  
+![B+Tree](https://github.com/olberix/structdata/blob/main/images/B+Tree.png)  
 
 当一棵B+树经历了多次的增删操作后，很容易会产生一些页空洞，每个数据页空闲行数也可能增多并且索引中逻辑上相邻的数据也不能很好的在数据文件中物理上相邻，当进行范围查找时，磁盘的读取和预读功能便很有可能利用不上，从而导致IO次数的增加，效率变低；所以在这个B+树的实现中提供了重建功能，类似mysql的[optimize](https://cloud.tencent.com/developer/article/1653643)，可以通过调用重建功能实现最优B+树结构  
 
